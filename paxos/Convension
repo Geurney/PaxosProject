@@ -2,8 +2,8 @@
   Post Hello how are you?
   Read 
 2. Client MSG format:
-  Post Hello how are you?'192.168.21.11'8001
-  Read'192.168.21.11'8001
+  post"Hello how are you?'192.168.21.11'8001
+  read'192.168.21.11'8001
 3. Server Command:
   Fail
   Restore
@@ -13,14 +13,17 @@
   AFTER_PREPARE
   AFTER_SENDACCEPT
 5. Mode
-  Normal
-  Recovery
+  NORMAL
+  RECOVERY
 6. Signal
+  post"Hello how are you?'192.168.21.11'8001
+  read'192.168.21.11'8001
   prepare"1,1
   ack"1,1"1,1"1(index)'Hello'1,1(b)
   accept"1,1"1(index)'Hello'1,1(b)
   help"serverID
   log"1(index)'Hello'1,1(b)"1(index)'Hello'1,1(b)
+  wake
 7. Variable 
   BallotNum
   AcceptNum
