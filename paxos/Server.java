@@ -115,7 +115,7 @@ public class Server {
 		COMM = new COMMThread();
 		CIL = new CLIThread();
 	}
-	
+
 	public void start() {
 		CIL.start();
 		COMM.start();
@@ -263,6 +263,30 @@ public class Server {
 			}
 		}
 
+		private void reject_post(String address) {
+			String[] address_split = address.split("\'");
+			Socket socket;
+			try {
+				socket = new Socket(address_split[0],
+						Integer.parseInt(address_split[1]));
+			} catch (NumberFormatException | IOException e) {
+				e.printStackTrace();
+				return;
+			}
+			PrintWriter out = null;
+			try {
+				out = new PrintWriter(socket.getOutputStream(), true);
+				out.println("Retry");
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			try {
+				socket.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+
 		private void process_post() {
 			BallotNum[0] = BallotNum[0]++;
 			BallotNum[1] = ID;
@@ -275,26 +299,37 @@ public class Server {
 		private void process_read(String[] address) {
 			String ipAddress = address[0];
 			int port = Integer.parseInt(address[1]);
-			if (MODE == MODETYPE.NORMAL) {
-				Socket socket;
-				try {
-					socket = new Socket(ipAddress, port);
-				} catch (IOException e) {
-					e.printStackTrace();
-					return;
+			Socket socket;
+			try {
+				socket = new Socket(ipAddress, port);
+			} catch (IOException e) {
+				e.printStackTrace();
+				return;
+			}
+			PrintWriter out;
+			try {
+				out = new PrintWriter(socket.getOutputStream(), true);
+				String msg;
+				if (MODE == MODETYPE.NORMAL) {
+					StringBuffer sb = new StringBuffer();
+					sb.append("Log\"");
+					for (String i : log) {
+						sb.append(i);
+						sb.append("\"");
+					}
+					sb.deleteCharAt(sb.length()-1);
+					msg = sb.toString();
+				} else {
+					msg = "Retry";
 				}
-				PrintWriter out;
-				try {
-					out = new PrintWriter(socket.getOutputStream(), true);
-					out.println("wake");
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-				try {
-					socket.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
+				out.println(msg);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			try {
+				socket.close();
+			} catch (IOException e) {
+				e.printStackTrace();
 			}
 		}
 
@@ -396,6 +431,9 @@ public class Server {
 			String cmd[] = input.split("\'");
 			String operation = cmd[0];
 			switch (operation) {
+			case "post":
+				reject_post(cmd[1]);
+				break;
 			case "prepare":
 				process_prepare(cmd[1].split(","));
 				break;
@@ -436,6 +474,9 @@ public class Server {
 			String cmd[] = input.split("\'");
 			String operation = cmd[0];
 			switch (operation) {
+			case "post":
+				reject_post(cmd[1]);
+				break;
 			case "prepare":
 				process_prepare(cmd[1].split(","));
 				break;
