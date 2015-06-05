@@ -94,26 +94,37 @@ public class Server {
 	 * Log
 	 */
 	private ArrayList<String> log;
+	
+	private String[] clientMsg;
 
 	public Server(ArrayList<String[]> config) throws IOException {
 		serverAddress = config;
 		ID = Integer.parseInt(serverAddress.get(0)[0]);
 		hostname = InetAddress.getByName(serverAddress.get(7)[0]);
 		port = Integer.parseInt(serverAddress.get(7)[1]);
+		//Status and Mode
 		STATUS = STATUSTYPE.WAIT;
 		MODE = MODETYPE.NORMAL;
+		// BallotNum
 		BallotNum = new int[2];
 		BallotNum[0] = 0;
 		BallotNum[1] = 0;
+		// Accept Num and Accept Val
 		AcceptNum = new int[2];
 		AcceptNum[0] = 0;
 		AcceptNum[1] = 0;
 		AcceptVal = new String[3];
+		// ACK count
 		ACKCount = 0;
+		// ACP count
 		ACPCount = 0;
+		// log
 		log = new ArrayList<String>();
+		// Client Msg
+		clientMsg = new String[2];
 		COMM = new COMMThread();
 		CIL = new CLIThread();
+		static ArrayList<String> ss = new ArrayList<String>();
 	}
 
 	public void start() {
@@ -253,17 +264,19 @@ public class Server {
 		}
 
 		private void fail_process(String input) {
-			String cmd[] = input.split("\'");
+			String cmd[] = input.split("\"");
 			String operation = cmd[0];
 			if (operation.equals("wake")) {
 				String msg = "help'" + ID;
+				BallotNum[0] = 0;
+				BallotNum[1] = 0;
 				STATUS = STATUSTYPE.WAIT;
 				MODE = MODETYPE.RECOVERY;
 				send(msg);
 			}
 		}
 
-		private void reject_post(String address) {
+		private void reject(String address, String msg) {
 			String[] address_split = address.split("\'");
 			Socket socket;
 			try {
@@ -276,7 +289,7 @@ public class Server {
 			PrintWriter out = null;
 			try {
 				out = new PrintWriter(socket.getOutputStream(), true);
-				out.println("Retry");
+				out.println(msg);
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -320,7 +333,7 @@ public class Server {
 					sb.deleteCharAt(sb.length()-1);
 					msg = sb.toString();
 				} else {
-					msg = "Retry";
+					msg = "Retry Server is recoverying...";
 				}
 				out.println(msg);
 			} catch (IOException e) {
@@ -353,6 +366,7 @@ public class Server {
 				msg.append(i);
 				msg.append("\"");
 			}
+			msg.deleteCharAt(msg.length() - 1);
 			send(msg.toString());
 		}
 
@@ -361,16 +375,15 @@ public class Server {
 				return;
 			} else {
 				int index = log.size();
-				for (int i = index; i < cmd.length; i++) {
+				for (int i = index + 1; i < cmd.length; i++) {
 					log.add(cmd[i]);
 				}
 				MODE = MODETYPE.NORMAL;
 			}
 		}
 
-		private void process_ack(String[] Accept_string) {
-			if (Integer.parseInt(Accept_string[0]) >= Integer
-					.parseInt(AcceptVal[0])) {
+		private void process_ack(String[] ACKNum, String[] ACKVal) {
+			if (Integer.parseInt(Accept_string[0]) >= log.size() - 1) {
 				AcceptVal[0] = Accept_string[0];
 				AcceptVal[1] = Accept_string[1];
 				AcceptVal[2] = Accept_string[2];
@@ -388,10 +401,12 @@ public class Server {
 		}
 
 		private void wait_process(final String input) {
-			String cmd[] = input.split("\'");
+			String cmd[] = input.split("\"");
 			String operation = cmd[0];
 			switch (operation) {
 			case "post":
+				clientMsg[0] = cmd[1];
+				clientMsg[1] = cmd[2];
 				process_post();
 				break;
 			case "prepare":
@@ -401,12 +416,15 @@ public class Server {
 				String[] ballot_string = cmd[1].split(",");
 				int[] ballot = { Integer.parseInt(ballot_string[0]),
 						Integer.parseInt(ballot_string[1]) };
+				if (ballot[0] == AcceptNum[0] && ballot[1] == AcceptNum[1]) {
+					break;
+				}
 				if (ballot[0] > BallotNum[0]
 						|| (ballot[0] == BallotNum[0] && ballot[1] >= BallotNum[1])) {
 					AcceptNum[0] = ballot[0];
 					AcceptNum[1] = ballot[1];
 					String[] msg = cmd[2].split("\'");
-					AcceptVal[0] = Integer.toString(log.size());
+					AcceptVal[0] = msg[0];
 					AcceptVal[1] = msg[1];
 					AcceptVal[2] = msg[2];
 					ACPCount = 1;
@@ -428,14 +446,22 @@ public class Server {
 		}
 
 		private void prepare_process(final String input) {
-			String cmd[] = input.split("\'");
+			String cmd[] = input.split("\"");
 			String operation = cmd[0];
 			switch (operation) {
-			case "post":
-				reject_post(cmd[1]);
+			case "post": {
+				String msg = "Retry After Prepare Post";
+				reject(cmd[1], msg);
+			}
 				break;
-			case "prepare":
+			case "prepare": {
 				process_prepare(cmd[1].split(","));
+				STATUS = STATUSTYPE.WAIT;
+				String msg = "Retry After Prepare Prepare";
+				reject(clientMsg[0], msg);
+				clientMsg[0] = null;
+				clientMsg[1] = null;
+			}
 				break;
 			case "accpet": {
 				String[] ballot_string = cmd[1].split(",");
@@ -446,17 +472,21 @@ public class Server {
 					AcceptNum[0] = ballot[0];
 					AcceptNum[1] = ballot[1];
 					String[] msg = cmd[2].split("\'");
-					AcceptVal[0] = Integer.toString(log.size());
+					AcceptVal[0] = msg[0];
 					AcceptVal[1] = msg[1];
 					AcceptVal[2] = msg[2];
 					ACPCount = 1;
 					send(input);
 					STATUS = STATUSTYPE.AFTER_SENDACCEPT;
+					String msg = "Retry After Prepare Accept";
+					reject(clientMsg[0], msg);
+					clientMsg[0] = null;
+					clientMsg[1] = null;
 				}
 			}
 				break;
 			case "ack":
-				process_ack(cmd[2].split(","));
+				process_ack(cmd[2].split(","),cmd[3].split("\'"));
 				break;
 			case "help":
 				process_help();
@@ -471,7 +501,7 @@ public class Server {
 		}
 
 		private void sendaccept_process(final String input) {
-			String cmd[] = input.split("\'");
+			String cmd[] = input.split("\"");
 			String operation = cmd[0];
 			switch (operation) {
 			case "post":
@@ -489,7 +519,7 @@ public class Server {
 					AcceptNum[0] = ballot[0];
 					AcceptNum[1] = ballot[1];
 					String[] msg = cmd[2].split("\'");
-					AcceptVal[0] = Integer.toString(log.size());
+					AcceptVal[0] = msg[0];
 					AcceptVal[1] = msg[1];
 					AcceptVal[2] = msg[2];
 					ACPCount = 1;
