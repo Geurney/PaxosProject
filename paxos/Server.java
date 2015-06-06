@@ -31,8 +31,9 @@ public class Server {
 	/**
 	 * Server Address
 	 */
-//	private ArrayList<String[]> serverAddress = new ArrayList<String[]>();
+	// private ArrayList<String[]> serverAddress = new ArrayList<String[]>();
 	private final ArrayList<String[]> serverAddress;
+
 	/**
 	 * FAIL WAIT AFTER_PREPARE AFTER_SENDACCEPT
 	 */
@@ -116,7 +117,7 @@ public class Server {
 		BallotNum = new int[2];
 		BallotNum[0] = 0;
 		BallotNum[1] = 0;
-		//Proposal Value
+		// Proposal Value
 		ProposeVal = new String[3];
 		// Accept Num and Accept Val
 		AcceptNum = new int[2];
@@ -131,8 +132,12 @@ public class Server {
 		log = new ArrayList<String>();
 		// Client Msg
 		clientMsg = new String[2];
+		// MaxACKNum and MaxACKVal
 		MaxACKNum = new int[2];
+		MaxACKNum[0] = -1;
+		MaxACKNum[1] = -1;
 		MaxACKVal = new String[3];
+		// Thread
 		COMM = new COMMThread();
 		CIL = new CLIThread();
 	}
@@ -193,6 +198,11 @@ public class Server {
 
 		private void default_process(String cmd) {
 			if (cmd.equals("Fail")) {
+				clientMsg = new String[2];
+				MaxACKNum[0] = -1;
+				MaxACKNum[1] = -1;
+				ACKCount = 0;
+				ACPCount = 0;
 				STATUS = STATUSTYPE.FAIL;
 			}
 		}
@@ -248,6 +258,7 @@ public class Server {
 				}
 				synchronized (STATUS) {
 					System.out.println("CURRENT STATE: " + STATUS);
+					System.out.println("	Input:" + input);
 					switch (STATUS) {
 					case FAIL:
 						fail_process(input);
@@ -284,7 +295,7 @@ public class Server {
 					if (i != ID)
 						send(msg, i);
 				}
-				System.out.println(ID + "send out help");
+				System.out.println("	"+ID + "send out help");
 			}
 		}
 
@@ -318,8 +329,8 @@ public class Server {
 			ProposeVal[0] = String.valueOf(log.size());
 			ProposeVal[1] = clientMsg[1];
 			ProposeVal[2] = BallotNum[0] + "," + BallotNum[1];
-			MaxACKNum[0] = 0;
-			MaxACKNum[1] = 0;
+			MaxACKNum[0] = -1;
+			MaxACKNum[1] = -1;
 			MaxACKVal = new String[3];
 			String msg = "prepare\"" + BallotNum[0] + "," + BallotNum[1];
 			ACKCount = 1;
@@ -327,7 +338,7 @@ public class Server {
 				if (i != ID)
 					send(msg, i);
 			}
-			System.out.println(ID + " send " + msg);
+			System.out.println("	"+ID + " send " + msg);
 		}
 
 		private void process_read(String[] address) {
@@ -371,13 +382,15 @@ public class Server {
 			int[] ballot = { Integer.parseInt(ballot_string[0]),
 					Integer.parseInt(ballot_string[1]) };
 			if (ballot[0] > BallotNum[0]
-					|| (ballot[0] == BallotNum[0] && ballot[1] >= BallotNum[1])) {
+					|| (ballot[0] == BallotNum[0] && ballot[1] > BallotNum[1])) {
 				BallotNum[0] = ballot[0];
 				BallotNum[1] = ballot[1];
 				String msg = "ack\"" + BallotNum[0] + "," + BallotNum[1] + "\""
-						+ AcceptNum[0] + "," + AcceptNum[1] + "\"" + AcceptVal;
+						+ AcceptNum[0] + "," + AcceptNum[1] + "\""
+						+ AcceptVal[0] + "\'" + AcceptVal[1] + "\'"
+						+ AcceptVal[2];
 				send(msg, BallotNum[1]);
-				System.out.println(ID + " send " + msg);
+				System.out.println("	"+ID + " send " + msg);
 			}
 		}
 
@@ -393,7 +406,7 @@ public class Server {
 				msg.append(AcceptVal);
 			}
 			send(msg.toString(), serverID);
-			System.out.println(ID + " send " + msg + " to " + serverID);
+			System.out.println("	"+ID + " send " + msg + " to " + serverID);
 
 		}
 
@@ -440,7 +453,7 @@ public class Server {
 			if (ballot[0] == BallotNum[0] && ballot[1] == BallotNum[1]) {
 				ACKCount++;
 				String[] val_string = acceptValString.split("\'");
-				if (val_string[0]!= null
+				if (val_string[0] != null
 						&& Integer.parseInt(val_string[0]) > log.size() - 1) {
 					if (accept[0] > MaxACKNum[0]
 							|| (accept[0] == MaxACKNum[0] && accept[1] > MaxACKNum[1])) {
@@ -510,7 +523,7 @@ public class Server {
 				clientMsg[1] = cmd[2];
 				process_post();
 				STATUS = STATUSTYPE.AFTER_PREPARE;
-				System.out.println("STATE CHANGE TO " + STATUS);
+				System.out.println("	STATE CHANGE TO " + STATUS);
 				break;
 			case "prepare":
 				process_prepare(cmd[1].split(","));
@@ -519,11 +532,8 @@ public class Server {
 				String[] ballot_string = cmd[1].split(",");
 				int[] ballot = { Integer.parseInt(ballot_string[0]),
 						Integer.parseInt(ballot_string[1]) };
-				if (ballot[0] == AcceptNum[0] && ballot[1] == AcceptNum[1]) {
-					break;
-				}
 				if (ballot[0] > BallotNum[0]
-						|| (ballot[0] == BallotNum[0] && ballot[1] >= BallotNum[1])) {
+						|| (ballot[0] == BallotNum[0] && ballot[1] > BallotNum[1])) {
 					AcceptNum[0] = ballot[0];
 					AcceptNum[1] = ballot[1];
 					String[] msg = cmd[2].split("\'");
@@ -536,7 +546,7 @@ public class Server {
 							send(input, i);
 					}
 					STATUS = STATUSTYPE.AFTER_SENDACCEPT;
-					System.out.println("STATE CHANGE TO " + STATUS);
+					System.out.println("	STATE CHANGE TO " + STATUS);
 				}
 			}
 				break;
@@ -708,8 +718,8 @@ public class Server {
 		private void send(String msg, int serverID) {
 			Socket socket;
 			try {
-				socket = new Socket(serverAddress.get(serverID+1)[0],
-						Integer.parseInt(serverAddress.get(serverID+1)[1]));
+				socket = new Socket(serverAddress.get(serverID + 1)[0],
+						Integer.parseInt(serverAddress.get(serverID + 1)[1]));
 			} catch (NumberFormatException | IOException e1) {
 				e1.printStackTrace();
 				return;
