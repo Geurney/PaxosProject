@@ -8,7 +8,7 @@ import java.util.ArrayList;
 public class ServerDrive {
 
 		public static void main(String[] args) throws IOException {
-			Server server1 = new Server(readFile("config5.txt"));
+			Server server1 = new Server(readFile("config1.txt"));
 
 			server1.start();
 

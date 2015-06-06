@@ -82,7 +82,12 @@ public class Client extends Thread {
 			String input;
 			try {
 				input = in.readLine();
-				System.out.println(input);
+				if (command.contains("post"))
+					System.out.println(input);
+				else {
+					String[] inStrings = input.split("\"");
+					for(String i:inStrings) System.out.println(i);
+				}
 				if (input.contains("Retry")) {
 					int temp = rand.nextInt(5);
 					while (temp == server)
@@ -120,10 +125,17 @@ public class Client extends Thread {
 			return;
 		}
 
-		out.println(command.substring(0, command.indexOf(' ')) + "\"" + IP
-				+ "\'" + port + "\""
-				+ command.substring(command.indexOf(' ') + 1, command.length()));
-
+		if (command.contains("post"))
+			out.println(command.substring(0, command.indexOf(' '))
+					+ "\""
+					+ IP
+					+ "\'"
+					+ port
+					+ "\""
+					+ command.substring(command.indexOf(' ') + 1,
+							command.length()));
+		else
+			out.println(command + "\"" + IP + "\'" + port);
 		// Close TCP connection
 		try {
 			mysocket.close();
