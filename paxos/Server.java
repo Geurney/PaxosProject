@@ -679,7 +679,7 @@ public class Server {
 							log.set(AcceptNum[0], val);
 						else
 							log.add(val);
-						System.out.println(ID + "successfully insert "
+						System.out.println(ID + " successfully insert "
 								+ log.get(Integer.parseInt(AcceptVal[0])));
 						if(clientMsg[0]!=null)
 						sendBack("You posted msg to Log[" + AcceptVal[0] + "]",

@@ -44,7 +44,7 @@ public class Client extends Thread {
 		try {
 			InetAddress hostname = InetAddress.getByName(address);
 			serverSocket = new ServerSocket(port, 5, hostname);
-			serverSocket.setSoTimeout(100000000);
+			serverSocket.setSoTimeout(3000);
 		} catch (IOException e) {
 			e.printStackTrace();
 			return;
@@ -55,16 +55,17 @@ public class Client extends Thread {
 		System.out.println("Please enter a command:");
 		while ((command = sc.nextLine()) != null) {
 			connectSite(server, command, address, port);
+			System.out.println("Connect to server "+server);
 			Socket mysocket = null;
 			try {
 				// Wait for a client to connect (blocking)
 				mysocket = serverSocket.accept();
 			} catch (SocketTimeoutException e) {
-				e.printStackTrace();
 				int temp = rand.nextInt(5);
 				while (temp == server)
 					temp = rand.nextInt(5);
 				server = temp;
+				System.out.println("Client times out! Please enter a command:");
 				continue;
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
