@@ -10,6 +10,7 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Scanner;
 
+import sun.security.util.Length;
 import jdk.internal.dynalink.beans.StaticClass;
 
 public class Server {
@@ -30,8 +31,8 @@ public class Server {
 	/**
 	 * Server Address
 	 */
+//	private ArrayList<String[]> serverAddress = new ArrayList<String[]>();
 	private final ArrayList<String[]> serverAddress;
-
 	/**
 	 * FAIL WAIT AFTER_PREPARE AFTER_SENDACCEPT
 	 */
@@ -106,8 +107,8 @@ public class Server {
 	public Server(ArrayList<String[]> config) throws IOException {
 		serverAddress = config;
 		ID = Integer.parseInt(serverAddress.get(0)[0]);
-		hostname = InetAddress.getByName(serverAddress.get(7)[0]);
-		port = Integer.parseInt(serverAddress.get(7)[1]);
+		hostname = InetAddress.getByName(serverAddress.get(6)[0]);
+		port = Integer.parseInt(serverAddress.get(6)[1]);
 		// Status and Mode
 		STATUS = STATUSTYPE.WAIT;
 		MODE = MODETYPE.NORMAL;
@@ -115,6 +116,8 @@ public class Server {
 		BallotNum = new int[2];
 		BallotNum[0] = 0;
 		BallotNum[1] = 0;
+		//Proposal Value
+		ProposeVal = new String[3];
 		// Accept Num and Accept Val
 		AcceptNum = new int[2];
 		AcceptNum[0] = 0;
@@ -232,6 +235,7 @@ public class Server {
 
 				try {
 					input = in.readLine();
+					System.out.println("INPUT: " + input);
 				} catch (IOException e) {
 					e.printStackTrace();
 					try {
@@ -243,6 +247,7 @@ public class Server {
 					continue;
 				}
 				synchronized (STATUS) {
+					System.out.println("CURRENT STATE: " + STATUS);
 					switch (STATUS) {
 					case FAIL:
 						fail_process(input);
@@ -272,13 +277,14 @@ public class Server {
 			String cmd[] = input.split("\"");
 			String operation = cmd[0];
 			if (operation.equals("wake")) {
-				String msg = "help'" + ID;
+				String msg = "help\"" + ID;
 				STATUS = STATUSTYPE.WAIT;
 				MODE = MODETYPE.RECOVERY;
 				for (int i = 0; i < 5; i++) {
 					if (i != ID)
 						send(msg, i);
 				}
+				System.out.println(ID + "send out help");
 			}
 		}
 
@@ -321,7 +327,7 @@ public class Server {
 				if (i != ID)
 					send(msg, i);
 			}
-
+			System.out.println(ID + " send " + msg);
 		}
 
 		private void process_read(String[] address) {
@@ -371,10 +377,11 @@ public class Server {
 				String msg = "ack\"" + BallotNum[0] + "," + BallotNum[1] + "\""
 						+ AcceptNum[0] + "," + AcceptNum[1] + "\"" + AcceptVal;
 				send(msg, BallotNum[1]);
+				System.out.println(ID + " send " + msg);
 			}
 		}
 
-		private void process_help() {
+		private void process_help(int serverID, String[] AcceptVal) {
 			StringBuffer msg = new StringBuffer();
 			msg.append("log\"");
 			for (String i : log) {
@@ -382,10 +389,12 @@ public class Server {
 				msg.append("\"");
 			}
 			msg.deleteCharAt(msg.length() - 1);
-			for (int i = 0; i < 5; i++) {
-				if (i != ID)
-					send(msg.toString(), i);
+			if (AcceptVal != null) {
+				msg.append(AcceptVal);
 			}
+			send(msg.toString(), serverID);
+			System.out.println(ID + " send " + msg + " to " + serverID);
+
 		}
 
 		private void process_log(String[] cmd) {
@@ -393,10 +402,31 @@ public class Server {
 				return;
 			} else {
 				int index = log.size();
-				for (int i = index + 1; i < cmd.length; i++) {
+				for (int i = index + 1; i < cmd.length - 1; i++) {
 					log.add(cmd[i]);
 				}
+				if (cmd.length == log.size() + 1) {
+					int InNum1 = Integer.parseInt(cmd[cmd.length - 1]
+							.split("\'")[2].split(",")[0]);
+					int InNum2 = Integer.parseInt(cmd[cmd.length - 1]
+							.split("\'")[2].split(",")[1]);
+					int LogNum1 = Integer.parseInt(log.get(log.size() - 1)
+							.split("\'")[2].split(",")[0]);
+					int LogNum2 = Integer.parseInt(log.get(log.size() - 1)
+							.split("\'")[2].split(",")[1]);
+					if (InNum1 > LogNum1
+							|| (InNum1 == LogNum1 && InNum2 > LogNum2))
+						log.add(cmd[cmd.length - 1]);
+				} else
+					log.add(cmd[cmd.length - 1]);
+				// Set current ballotNum to the ballotNum in the last slot of
+				// the log
+				BallotNum[0] = Integer.parseInt(log.get(log.size() - 1).split(
+						"\'")[2].split(",")[0]);
+				BallotNum[1] = Integer.parseInt(log.get(log.size() - 1).split(
+						"\'")[2].split(",")[1]);
 				MODE = MODETYPE.NORMAL;
+				System.out.println("Receive log: " + log.toString());
 			}
 		}
 
@@ -410,7 +440,7 @@ public class Server {
 			if (ballot[0] == BallotNum[0] && ballot[1] == BallotNum[1]) {
 				ACKCount++;
 				String[] val_string = acceptValString.split("\'");
-				if (Integer.parseInt(val_string[0]) != 0
+				if (val_string[0]!= null
 						&& Integer.parseInt(val_string[0]) > log.size() - 1) {
 					if (accept[0] > MaxACKNum[0]
 							|| (accept[0] == MaxACKNum[0] && accept[1] > MaxACKNum[1])) {
@@ -442,8 +472,10 @@ public class Server {
 						if (i != ID)
 							send(msg, i);
 					}
+					System.out.println(ID + " send " + msg);
 					ACPCount = 1;
 					STATUS = STATUSTYPE.AFTER_SENDACCEPT;
+					System.out.println("STATE CHANGE TO " + STATUS);
 				}
 			}
 		}
@@ -478,6 +510,7 @@ public class Server {
 				clientMsg[1] = cmd[2];
 				process_post();
 				STATUS = STATUSTYPE.AFTER_PREPARE;
+				System.out.println("STATE CHANGE TO " + STATUS);
 				break;
 			case "prepare":
 				process_prepare(cmd[1].split(","));
@@ -503,11 +536,12 @@ public class Server {
 							send(input, i);
 					}
 					STATUS = STATUSTYPE.AFTER_SENDACCEPT;
+					System.out.println("STATE CHANGE TO " + STATUS);
 				}
 			}
 				break;
 			case "help":
-				process_help();
+				process_help(Integer.parseInt(cmd[1]), null);
 				break;
 			case "log":
 				process_log(cmd);
@@ -530,6 +564,7 @@ public class Server {
 			case "prepare": {
 				process_prepare(cmd[1].split(","));
 				STATUS = STATUSTYPE.WAIT;
+				System.out.println("STATE CHANGE TO " + STATUS);
 				String msg = "Retry After Prepare Prepare";
 				reject(clientMsg[0], msg);
 				clientMsg[0] = null;
@@ -554,6 +589,7 @@ public class Server {
 							send(input, i);
 					}
 					STATUS = STATUSTYPE.AFTER_SENDACCEPT;
+					System.out.println("STATE CHANGE TO " + STATUS);
 					String msg = "Retry After Prepare Accept";
 					reject(clientMsg[0], msg);
 					clientMsg[0] = null;
@@ -565,7 +601,7 @@ public class Server {
 				process_ack(cmd[1].split(","), cmd[2].split(","), cmd[3]);
 				break;
 			case "help":
-				process_help();
+				process_help(Integer.parseInt(cmd[1]), null);
 				break;
 			case "log":
 				process_log(cmd);
@@ -581,15 +617,21 @@ public class Server {
 			String operation = cmd[0];
 			switch (operation) {
 			case "post": {
-				String msg = "Retry After Send Accept Post";
+				String msg = "Retry After SendAccept Post";
 				reject(cmd[1], msg);
 			}
 				break;
 			case "prepare":
 				process_prepare(cmd[1].split(","));
 				STATUS = STATUSTYPE.WAIT;
+				System.out.println("STATE CHANGE TO " + STATUS);
+				String msg = "Retry After SendAccept Prepare";
+				reject(clientMsg[0], msg);
+				clientMsg[0] = null;
+				clientMsg[1] = null;
 				break;
-			case "accpet": {
+
+			case "accpet":
 				String[] ballot_string = cmd[1].split(",");
 				int[] ballot = { Integer.parseInt(ballot_string[0]),
 						Integer.parseInt(ballot_string[1]) };
@@ -597,29 +639,39 @@ public class Server {
 						|| (ballot[0] == BallotNum[0] && ballot[1] > BallotNum[1])) {
 					AcceptNum[0] = ballot[0];
 					AcceptNum[1] = ballot[1];
-					String[] msg = cmd[2].split("\'");
-					AcceptVal[0] = msg[0];
-					AcceptVal[1] = msg[1];
-					AcceptVal[2] = msg[2];
+					String[] val = cmd[2].split("\'");
+					AcceptVal[0] = val[0];
+					AcceptVal[1] = val[1];
+					AcceptVal[2] = val[2];
 					ACPCount = 1;
 					for (int i = 0; i < 5; i++) {
 						if (i != ID)
 							send(input, i);
 					}
-
+					System.out.println(ID + " send " + input);
+					String msg2 = "Retry After SendAccept Accept";
+					reject(clientMsg[0], msg2);
+					clientMsg[0] = null;
+					clientMsg[1] = null;
 				} else {
 					ACPCount++;
 					if (ACPCount >= MAJORITY) {
 						String val = AcceptVal[0] + "\'" + AcceptVal[1] + "\'"
 								+ AcceptVal[2];
-						log.add(val);
+						log.set(AcceptNum[0], val);
+						System.out.println(ID + "successfully insert "
+								+ log.get(AcceptNum[0]));
+						sendBack("You posted msg to Log[" + AcceptNum[0] + "]",
+								clientMsg[0]);
+						System.out.println(ID + " send MsgID to client!");
 						STATUS = STATUSTYPE.WAIT;
+						System.out.println("STATE CHANGE TO " + STATUS);
 					}
 				}
-			}
+
 				break;
 			case "help":
-				process_help();
+				process_help(Integer.parseInt(cmd[1]), AcceptVal);
 				break;
 			case "log":
 				process_log(cmd);
@@ -629,12 +681,11 @@ public class Server {
 			}
 		}
 
-		private void send(String msg, int serverID) {
-
+		private void sendBack(String msg, String client) {
 			Socket socket;
 			try {
-				socket = new Socket(serverAddress.get(serverID)[0],
-						Integer.parseInt(serverAddress.get(serverID)[1]));
+				socket = new Socket(client.split("\'")[0],
+						Integer.parseInt(client.split("\'")[1]));
 			} catch (NumberFormatException | IOException e1) {
 				e1.printStackTrace();
 				return;
@@ -652,7 +703,30 @@ public class Server {
 				e.printStackTrace();
 				return;
 			}
+		}
 
+		private void send(String msg, int serverID) {
+			Socket socket;
+			try {
+				socket = new Socket(serverAddress.get(serverID+1)[0],
+						Integer.parseInt(serverAddress.get(serverID+1)[1]));
+			} catch (NumberFormatException | IOException e1) {
+				e1.printStackTrace();
+				return;
+			}
+			PrintWriter out = null;
+			try {
+				out = new PrintWriter(socket.getOutputStream(), true);
+				out.println(msg);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			try {
+				socket.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+				return;
+			}
 		}
 	}
 }

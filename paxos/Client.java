@@ -25,46 +25,12 @@ public class Client extends Thread {
 	 */
 	private final ArrayList<String[]> serverAddress;
 
-	public Client(int port) throws IOException {
+	public Client(int port, ArrayList<String[]> serverAddress)
+			throws IOException {
 		InetAddress addr = InetAddress.getLocalHost();
 		this.address = addr.getHostAddress();
 		this.port = port;
-		this.serverAddress = readFile("Server.txt");
-	}
-
-	public static void main(String[] args) throws IOException {
-		int port;
-		if (args.length == 0) {
-			port = 8000;
-			System.out.println("Please specifiy the port!");
-		} else {
-			port = Integer.parseInt(args[0]);
-		}
-		Client client = new Client(port);
-		client.start();
-		System.out.println("Client: " + client.address + ":" + client.port);
-	}
-
-	/**
-	 * Read Server Address from File.
-	 * 
-	 * @param fileName
-	 *            Server Address file name.
-	 * @return Server Address List
-	 * @throws IOException
-	 */
-	public static ArrayList<String[]> readFile(String fileName)
-			throws IOException {
-		FileReader fileReader = new FileReader(fileName);
-		BufferedReader bufferedReader = new BufferedReader(fileReader);
-		ArrayList<String[]> serverAddress = new ArrayList<String[]>();
-		String line = null;
-		while ((line = bufferedReader.readLine()) != null) {
-			String[] addr = line.split(" ");
-			serverAddress.add(addr);
-		}
-		bufferedReader.close();
-		return serverAddress;
+		this.serverAddress = serverAddress;
 	}
 
 	@Override
@@ -78,53 +44,55 @@ public class Client extends Thread {
 		try {
 			InetAddress hostname = InetAddress.getByName(address);
 			serverSocket = new ServerSocket(port, 5, hostname);
-			serverSocket.setSoTimeout(10000);
+			serverSocket.setSoTimeout(100000000);
 		} catch (IOException e) {
 			e.printStackTrace();
 			return;
 		}
-		
+
 		Random rand = new Random();
 		int server = 0;
+		System.out.println("Please enter a command:");
 		while ((command = sc.nextLine()) != null) {
-			System.out.println("Please enter a command:");
-				connectSite(server, command, address, port);
-				Socket mysocket = null;
-				try {
-					// Wait for a client to connect (blocking)
-					mysocket = serverSocket.accept();
-				} catch (SocketTimeoutException e) {
-					e.printStackTrace();
+			connectSite(server, command, address, port);
+			Socket mysocket = null;
+			try {
+				// Wait for a client to connect (blocking)
+				mysocket = serverSocket.accept();
+			} catch (SocketTimeoutException e) {
+				e.printStackTrace();
+				int temp = rand.nextInt(5);
+				while (temp == server)
+					temp = rand.nextInt(5);
+				server = temp;
+				continue;
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			BufferedReader in;
+			try {
+				in = new BufferedReader(new InputStreamReader(
+						mysocket.getInputStream()));
+			} catch (IOException e) {
+				e.printStackTrace();
+				continue;
+			}
+			// Read event from client
+			String input;
+			try {
+				input = in.readLine();
+				System.out.println(input);
+				if (input.contains("Retry")) {
 					int temp = rand.nextInt(5);
-					while (temp == server) temp = rand.nextInt(5);
+					while (temp == server)
+						temp = rand.nextInt(5);
 					server = temp;
-					continue;
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
 				}
-				BufferedReader in;
-				try {
-					in = new BufferedReader(new InputStreamReader(
-							mysocket.getInputStream()));
-				} catch (IOException e) {
-					e.printStackTrace();
-					continue;
-				}
-				// Read event from client
-				String input;
-				try {
-					input = in.readLine();
-					System.out.println(input);
-					if(input.contains("Retry")){
-						int temp = rand.nextInt(5);
-						while (temp == server) temp = rand.nextInt(5);
-						server = temp;
-					}
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-				
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			System.out.println("Please enter a command:");
 		}
 		try {
 			serverSocket.close();
@@ -133,16 +101,16 @@ public class Client extends Thread {
 			e.printStackTrace();
 		}
 	}
-	
+
 	public void connectSite(int i, String command, String IP, int port) {
-		// TODO Auto-generated method stub
-		int siteID = i;
-		Socket mysocket = null;
+		Socket mysocket;
 		try {
-				mysocket = new Socket(serverAddress.get(siteID)[0], Integer.parseInt(serverAddress.get(siteID)[1]));
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+			mysocket = new Socket(serverAddress.get(i)[0],
+					Integer.parseInt(serverAddress.get(i)[1]));
+		} catch (IOException e) {
+			e.printStackTrace();
+			return;
+		}
 
 		PrintWriter out;
 		try {
@@ -152,7 +120,9 @@ public class Client extends Thread {
 			return;
 		}
 
-		out.println(command + '\'' + IP + '\'' + port);
+		out.println(command.substring(0, command.indexOf(' ')) + "\"" + IP
+				+ "\"" + port
+				+ command.substring(command.indexOf(' ') + 1, command.length()));
 
 		// Close TCP connection
 		try {

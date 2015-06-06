@@ -5,14 +5,21 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 
-public class ServerDrive {
+public class ClientDrive {
 
-		public static void main(String[] args) throws IOException {
-			Server server1 = new Server(readFile("config5.txt"));
-
-			server1.start();
-
+	public static void main(String[] args) throws IOException {
+		int port;
+		if (args.length == 0) {
+			port = 8000;
+			System.out.println("Please specifiy the port!");
+		} else {
+			port = Integer.parseInt(args[0]);
 		}
+		Client client = new Client(port,readFile("Server.txt"));
+		client.start();
+		System.out.println("Client is running");
+	}
+	
 		/**
 		 * Read Server Address from File.
 		 * 
@@ -24,16 +31,13 @@ public class ServerDrive {
 				throws IOException {
 			FileReader fileReader = new FileReader(fileName);
 			BufferedReader bufferedReader = new BufferedReader(fileReader);
-			ArrayList<String[]> ProcessAddress = new ArrayList<String[]>();
-			String[] ID = new String[1];
-			ID[0] = bufferedReader.readLine();
-			ProcessAddress.add(ID);
+			ArrayList<String[]> serverAddress = new ArrayList<String[]>();
 			String line = null;
 			while ((line = bufferedReader.readLine()) != null) {
 				String[] addr = line.split(" ");
-				ProcessAddress.add(addr);
+				serverAddress.add(addr);
 			}
 			bufferedReader.close();
-			return ProcessAddress;
+			return serverAddress;
 		}
 }
