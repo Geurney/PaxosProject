@@ -96,6 +96,9 @@ public class Server {
 	private ArrayList<String> log;
 	
 	private String[] clientMsg;
+	
+	private int[] MaxACKNum;
+	private String[] MaxACKVal;
 
 	public Server(ArrayList<String[]> config) throws IOException {
 		serverAddress = config;
@@ -122,9 +125,10 @@ public class Server {
 		log = new ArrayList<String>();
 		// Client Msg
 		clientMsg = new String[2];
+		MaxACKNum = new int[2];
+		MaxACKVal = new String[3];
 		COMM = new COMMThread();
 		CIL = new CLIThread();
-		static ArrayList<String> ss = new ArrayList<String>();
 	}
 
 	public void start() {
@@ -159,8 +163,6 @@ public class Server {
 			if (cmd.equals("Fail")) {
 				return;
 			} else if (cmd.equals("Restore")) {
-				BallotNum[0] = 0;
-				BallotNum[1] = 0;
 				Socket socket;
 				try {
 					socket = new Socket(hostname, port);
@@ -268,8 +270,6 @@ public class Server {
 			String operation = cmd[0];
 			if (operation.equals("wake")) {
 				String msg = "help'" + ID;
-				BallotNum[0] = 0;
-				BallotNum[1] = 0;
 				STATUS = STATUSTYPE.WAIT;
 				MODE = MODETYPE.RECOVERY;
 				send(msg);
@@ -381,8 +381,64 @@ public class Server {
 				MODE = MODETYPE.NORMAL;
 			}
 		}
-
+		private void process_ack(String[] ballot_string, String[] accept_string, String acceptValString) {
+			int[] ballot = { Integer.parseInt(ballot_string[0]),
+					Integer.parseInt(ballot_string[1]) };
+			int[] accept = { Integer.parseInt(accept_string[0]),
+					Integer.parseInt(accept_string[1]) };
+			if (ballot[0] == BallotNum[0] && ballot[1] == BallotNum[1]) {
+				ACKCount++;
+				String[] val_string = acceptValString.split("\'");
+				if (Integer.parseInt(val_string[0]) > log.size() - 1) {
+					if (accept[0] > MaxACKNum[0]
+							|| (accept[0] == MaxACKNum[0] && accept[1] > MaxACKNum[1])) {
+						MaxACKNum[0] = accept[0];
+						MaxACKNum[1] = accept[1];
+						MaxACKVal[0] = val_string[0];
+						MaxACKVal[1] = val_string[1];
+						MaxACKVal[2] = val_string[2];
+					}
+				}
+				if (ACKCount >= MAJORITY) {
+					BallotNum[0] = MaxACKNum[0];
+					BallotNum[1] = MaxACKNum[1 ];		
+					AcceptNum[0] = MaxACKNum[0];
+					AcceptNum[1] = MaxACKNum[1];
+					AcceptVal[0] = MaxACKVal[0];
+					AcceptVal[1] = MaxACKVal[1];
+					AcceptVal[2] = MaxACKVal[2];
+					String val = AcceptVal[0] + "\'" + AcceptVal[1] + "\'"
+							+ AcceptVal[2];
+					String msg = "accept\"" + BallotNum[0] + "," + BallotNum[1]
+							+ "\"" + val;
+					send(msg);
+					ACPCount = 1;
+					STATUS = STATUSTYPE.AFTER_SENDACCEPT;
+				}
+			}
+		}
+/*
 		private void process_ack(String[] ACKNum, String[] ACKVal) {
+			if (Integer.parseInt(ACKVal[0]) < log.size() - 1) {
+				return;
+			}
+			compare ballot number[0]
+					if(ballot[0] < BallotNum[0]) {
+						return;
+					}
+			
+			ACKCount++;
+			if (ACKCount >= MAJORITY) {
+				
+				String val = AcceptVal[0] + "\'" + AcceptVal[1] + "\'"
+						+ AcceptVal[2];
+				String msg = "accept\"" + BallotNum[0] + "," + BallotNum[1]
+						+ "\"" + val;
+				send(msg);
+				ACPCount = 1;
+				STATUS = STATUSTYPE.AFTER_SENDACCEPT;
+			}
+			
 			if (Integer.parseInt(Accept_string[0]) >= log.size() - 1) {
 				AcceptVal[0] = Accept_string[0];
 				AcceptVal[1] = Accept_string[1];
@@ -398,7 +454,7 @@ public class Server {
 				ACPCount = 1;
 				STATUS = STATUSTYPE.AFTER_SENDACCEPT;
 			}
-		}
+		}*/
 
 		private void wait_process(final String input) {
 			String cmd[] = input.split("\"");
@@ -471,10 +527,10 @@ public class Server {
 						|| (ballot[0] == BallotNum[0] && ballot[1] >= BallotNum[1])) {
 					AcceptNum[0] = ballot[0];
 					AcceptNum[1] = ballot[1];
-					String[] msg = cmd[2].split("\'");
-					AcceptVal[0] = msg[0];
-					AcceptVal[1] = msg[1];
-					AcceptVal[2] = msg[2];
+					String[] val = cmd[2].split("\'");
+					AcceptVal[0] = val[0];
+					AcceptVal[1] = val[1];
+					AcceptVal[2] = val[2];
 					ACPCount = 1;
 					send(input);
 					STATUS = STATUSTYPE.AFTER_SENDACCEPT;
@@ -486,7 +542,27 @@ public class Server {
 			}
 				break;
 			case "ack":
-				process_ack(cmd[2].split(","),cmd[3].split("\'"));
+				/*//ack"1,1"1,1"1(index)'Hello'1,1(b)
+				// Not a leader
+					prepare: ballotNum>myBallotNum
+							 myBallotNum = ballotNum
+					accept: compare ballotnum
+							myacceptNum = acceptNum
+					Leader:
+						Post: myBallotNum = number++,myID
+						ack:  如果不是bottom并且更大，
+							则自己的BallotNum = 接收的AcceptNum
+							自己的AcceptNum=接收的AcceptNum
+					在prepare里，接收到的ballotNum和自己的是一样的时候，ACKCount才++
+					
+					int[] MaxACKNum
+					String[] MaxACKVal
+				进入After_prepare时	
+					MaxACKNum[0] = 0;
+					MaxACKNum[1] = 0;
+					MaxACKVal = new String[3];*/
+				
+				process_ack(cmd[1].split(","),cmd[2].split(","),cmd[3]);
 				break;
 			case "help":
 				process_help();
@@ -504,8 +580,10 @@ public class Server {
 			String cmd[] = input.split("\"");
 			String operation = cmd[0];
 			switch (operation) {
-			case "post":
-				reject_post(cmd[1]);
+			case "post": {
+				String msg = "Retry After Send Accept Post";
+				reject(cmd[1], msg);
+			}
 				break;
 			case "prepare":
 				process_prepare(cmd[1].split(","));
@@ -531,15 +609,10 @@ public class Server {
 						String val = AcceptVal[0] + "\'" + AcceptVal[1] + "\'"
 								+ AcceptVal[2];
 						log.add(val);
-						BallotNum[0] = 0;
-						BallotNum[1] = 0;
 						STATUS = STATUSTYPE.WAIT;
 					}
 				}
 			}
-				break;
-			case "ack":
-				process_ack(cmd[2].split(","));
 				break;
 			case "help":
 				process_help();
