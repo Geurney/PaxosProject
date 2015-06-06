@@ -10,9 +10,6 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Scanner;
 
-import sun.security.util.Length;
-import jdk.internal.dynalink.beans.StaticClass;
-
 public class Server {
 	/**
 	 * Server ID
