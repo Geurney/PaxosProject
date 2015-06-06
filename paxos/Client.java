@@ -121,7 +121,7 @@ public class Client extends Thread {
 		}
 
 		out.println(command.substring(0, command.indexOf(' ')) + "\"" + IP
-				+ "\"" + port
+				+ "\'" + port + "\""
 				+ command.substring(command.indexOf(' ') + 1, command.length()));
 
 		// Close TCP connection
