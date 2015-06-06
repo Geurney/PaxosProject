@@ -10,6 +10,8 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Scanner;
 
+import jdk.internal.dynalink.beans.StaticClass;
+
 public class Server {
 	/**
 	 * Server ID
@@ -94,18 +96,19 @@ public class Server {
 	 * Log
 	 */
 	private ArrayList<String> log;
-	
+
 	private String[] clientMsg;
-	
+
 	private int[] MaxACKNum;
 	private String[] MaxACKVal;
+	private String[] ProposeVal;
 
 	public Server(ArrayList<String[]> config) throws IOException {
 		serverAddress = config;
 		ID = Integer.parseInt(serverAddress.get(0)[0]);
 		hostname = InetAddress.getByName(serverAddress.get(7)[0]);
 		port = Integer.parseInt(serverAddress.get(7)[1]);
-		//Status and Mode
+		// Status and Mode
 		STATUS = STATUSTYPE.WAIT;
 		MODE = MODETYPE.NORMAL;
 		// BallotNum
@@ -272,7 +275,10 @@ public class Server {
 				String msg = "help'" + ID;
 				STATUS = STATUSTYPE.WAIT;
 				MODE = MODETYPE.RECOVERY;
-				send(msg);
+				for (int i = 0; i < 5; i++) {
+					if (i != ID)
+						send(msg, i);
+				}
 			}
 		}
 
@@ -303,10 +309,19 @@ public class Server {
 		private void process_post() {
 			BallotNum[0] = BallotNum[0]++;
 			BallotNum[1] = ID;
+			ProposeVal[0] = String.valueOf(log.size());
+			ProposeVal[1] = clientMsg[1];
+			ProposeVal[2] = BallotNum[0] + "," + BallotNum[1];
+			MaxACKNum[0] = 0;
+			MaxACKNum[1] = 0;
+			MaxACKVal = new String[3];
 			String msg = "prepare\"" + BallotNum[0] + "," + BallotNum[1];
 			ACKCount = 1;
-			send(msg);
-			STATUS = STATUSTYPE.AFTER_PREPARE;
+			for (int i = 0; i < 5; i++) {
+				if (i != ID)
+					send(msg, i);
+			}
+
 		}
 
 		private void process_read(String[] address) {
@@ -330,7 +345,7 @@ public class Server {
 						sb.append(i);
 						sb.append("\"");
 					}
-					sb.deleteCharAt(sb.length()-1);
+					sb.deleteCharAt(sb.length() - 1);
 					msg = sb.toString();
 				} else {
 					msg = "Retry Server is recoverying...";
@@ -355,7 +370,7 @@ public class Server {
 				BallotNum[1] = ballot[1];
 				String msg = "ack\"" + BallotNum[0] + "," + BallotNum[1] + "\""
 						+ AcceptNum[0] + "," + AcceptNum[1] + "\"" + AcceptVal;
-				send(msg);
+				send(msg, BallotNum[1]);
 			}
 		}
 
@@ -367,7 +382,10 @@ public class Server {
 				msg.append("\"");
 			}
 			msg.deleteCharAt(msg.length() - 1);
-			send(msg.toString());
+			for (int i = 0; i < 5; i++) {
+				if (i != ID)
+					send(msg.toString(), i);
+			}
 		}
 
 		private void process_log(String[] cmd) {
@@ -381,15 +399,19 @@ public class Server {
 				MODE = MODETYPE.NORMAL;
 			}
 		}
-		private void process_ack(String[] ballot_string, String[] accept_string, String acceptValString) {
+
+		private void process_ack(String[] ballot_string,
+				String[] accept_string, String acceptValString) {
 			int[] ballot = { Integer.parseInt(ballot_string[0]),
 					Integer.parseInt(ballot_string[1]) };
 			int[] accept = { Integer.parseInt(accept_string[0]),
 					Integer.parseInt(accept_string[1]) };
+
 			if (ballot[0] == BallotNum[0] && ballot[1] == BallotNum[1]) {
 				ACKCount++;
 				String[] val_string = acceptValString.split("\'");
-				if (Integer.parseInt(val_string[0]) > log.size() - 1) {
+				if (Integer.parseInt(val_string[0]) != 0
+						&& Integer.parseInt(val_string[0]) > log.size() - 1) {
 					if (accept[0] > MaxACKNum[0]
 							|| (accept[0] == MaxACKNum[0] && accept[1] > MaxACKNum[1])) {
 						MaxACKNum[0] = accept[0];
@@ -400,61 +422,52 @@ public class Server {
 					}
 				}
 				if (ACKCount >= MAJORITY) {
-					BallotNum[0] = MaxACKNum[0];
-					BallotNum[1] = MaxACKNum[1 ];		
-					AcceptNum[0] = MaxACKNum[0];
-					AcceptNum[1] = MaxACKNum[1];
-					AcceptVal[0] = MaxACKVal[0];
-					AcceptVal[1] = MaxACKVal[1];
-					AcceptVal[2] = MaxACKVal[2];
-					String val = AcceptVal[0] + "\'" + AcceptVal[1] + "\'"
-							+ AcceptVal[2];
+					if (MaxACKNum[0] == 0) {
+						BallotNum[0] = MaxACKNum[0];
+						BallotNum[1] = MaxACKNum[1];
+						ProposeVal[0] = MaxACKVal[0];
+						ProposeVal[1] = MaxACKVal[1];
+						ProposeVal[2] = MaxACKVal[2];
+					}
+					AcceptNum[0] = BallotNum[0];
+					AcceptNum[1] = BallotNum[1];
+					AcceptVal[0] = ProposeVal[0];
+					AcceptVal[1] = ProposeVal[1];
+					AcceptVal[2] = ProposeVal[2];
+					String val = ProposeVal[0] + "\'" + ProposeVal[1] + "\'"
+							+ ProposeVal[2];
 					String msg = "accept\"" + BallotNum[0] + "," + BallotNum[1]
 							+ "\"" + val;
-					send(msg);
+					for (int i = 0; i < 5; i++) {
+						if (i != ID)
+							send(msg, i);
+					}
 					ACPCount = 1;
 					STATUS = STATUSTYPE.AFTER_SENDACCEPT;
 				}
 			}
 		}
-/*
-		private void process_ack(String[] ACKNum, String[] ACKVal) {
-			if (Integer.parseInt(ACKVal[0]) < log.size() - 1) {
-				return;
-			}
-			compare ballot number[0]
-					if(ballot[0] < BallotNum[0]) {
-						return;
-					}
-			
-			ACKCount++;
-			if (ACKCount >= MAJORITY) {
-				
-				String val = AcceptVal[0] + "\'" + AcceptVal[1] + "\'"
-						+ AcceptVal[2];
-				String msg = "accept\"" + BallotNum[0] + "," + BallotNum[1]
-						+ "\"" + val;
-				send(msg);
-				ACPCount = 1;
-				STATUS = STATUSTYPE.AFTER_SENDACCEPT;
-			}
-			
-			if (Integer.parseInt(Accept_string[0]) >= log.size() - 1) {
-				AcceptVal[0] = Accept_string[0];
-				AcceptVal[1] = Accept_string[1];
-				AcceptVal[2] = Accept_string[2];
-			}
-			ACKCount++;
-			if (ACKCount >= MAJORITY) {
-				String val = AcceptVal[0] + "\'" + AcceptVal[1] + "\'"
-						+ AcceptVal[2];
-				String msg = "accept\"" + BallotNum[0] + "," + BallotNum[1]
-						+ "\"" + val;
-				send(msg);
-				ACPCount = 1;
-				STATUS = STATUSTYPE.AFTER_SENDACCEPT;
-			}
-		}*/
+
+		/*
+		 * private void process_ack(String[] ACKNum, String[] ACKVal) { if
+		 * (Integer.parseInt(ACKVal[0]) < log.size() - 1) { return; } compare
+		 * ballot number[0] if(ballot[0] < BallotNum[0]) { return; }
+		 * 
+		 * ACKCount++; if (ACKCount >= MAJORITY) {
+		 * 
+		 * String val = AcceptVal[0] + "\'" + AcceptVal[1] + "\'" +
+		 * AcceptVal[2]; String msg = "accept\"" + BallotNum[0] + "," +
+		 * BallotNum[1] + "\"" + val; send(msg); ACPCount = 1; STATUS =
+		 * STATUSTYPE.AFTER_SENDACCEPT; }
+		 * 
+		 * if (Integer.parseInt(Accept_string[0]) >= log.size() - 1) {
+		 * AcceptVal[0] = Accept_string[0]; AcceptVal[1] = Accept_string[1];
+		 * AcceptVal[2] = Accept_string[2]; } ACKCount++; if (ACKCount >=
+		 * MAJORITY) { String val = AcceptVal[0] + "\'" + AcceptVal[1] + "\'" +
+		 * AcceptVal[2]; String msg = "accept\"" + BallotNum[0] + "," +
+		 * BallotNum[1] + "\"" + val; send(msg); ACPCount = 1; STATUS =
+		 * STATUSTYPE.AFTER_SENDACCEPT; } }
+		 */
 
 		private void wait_process(final String input) {
 			String cmd[] = input.split("\"");
@@ -464,6 +477,7 @@ public class Server {
 				clientMsg[0] = cmd[1];
 				clientMsg[1] = cmd[2];
 				process_post();
+				STATUS = STATUSTYPE.AFTER_PREPARE;
 				break;
 			case "prepare":
 				process_prepare(cmd[1].split(","));
@@ -484,7 +498,10 @@ public class Server {
 					AcceptVal[1] = msg[1];
 					AcceptVal[2] = msg[2];
 					ACPCount = 1;
-					send(input);
+					for (int i = 0; i < 5; i++) {
+						if (i != ID)
+							send(input, i);
+					}
 					STATUS = STATUSTYPE.AFTER_SENDACCEPT;
 				}
 			}
@@ -532,7 +549,10 @@ public class Server {
 					AcceptVal[1] = val[1];
 					AcceptVal[2] = val[2];
 					ACPCount = 1;
-					send(input);
+					for (int i = 0; i < 5; i++) {
+						if (i != ID)
+							send(input, i);
+					}
 					STATUS = STATUSTYPE.AFTER_SENDACCEPT;
 					String msg = "Retry After Prepare Accept";
 					reject(clientMsg[0], msg);
@@ -542,27 +562,7 @@ public class Server {
 			}
 				break;
 			case "ack":
-				/*//ack"1,1"1,1"1(index)'Hello'1,1(b)
-				// Not a leader
-					prepare: ballotNum>myBallotNum
-							 myBallotNum = ballotNum
-					accept: compare ballotnum
-							myacceptNum = acceptNum
-					Leader:
-						Post: myBallotNum = number++,myID
-						ack:  如果不是bottom并且更大，
-							则自己的BallotNum = 接收的AcceptNum
-							自己的AcceptNum=接收的AcceptNum
-					在prepare里，接收到的ballotNum和自己的是一样的时候，ACKCount才++
-					
-					int[] MaxACKNum
-					String[] MaxACKVal
-				进入After_prepare时	
-					MaxACKNum[0] = 0;
-					MaxACKNum[1] = 0;
-					MaxACKVal = new String[3];*/
-				
-				process_ack(cmd[1].split(","),cmd[2].split(","),cmd[3]);
+				process_ack(cmd[1].split(","), cmd[2].split(","), cmd[3]);
 				break;
 			case "help":
 				process_help();
@@ -587,13 +587,14 @@ public class Server {
 				break;
 			case "prepare":
 				process_prepare(cmd[1].split(","));
+				STATUS = STATUSTYPE.WAIT;
 				break;
 			case "accpet": {
 				String[] ballot_string = cmd[1].split(",");
 				int[] ballot = { Integer.parseInt(ballot_string[0]),
 						Integer.parseInt(ballot_string[1]) };
 				if (ballot[0] > BallotNum[0]
-						|| (ballot[0] == BallotNum[0] && ballot[1] >= BallotNum[1])) {
+						|| (ballot[0] == BallotNum[0] && ballot[1] > BallotNum[1])) {
 					AcceptNum[0] = ballot[0];
 					AcceptNum[1] = ballot[1];
 					String[] msg = cmd[2].split("\'");
@@ -601,8 +602,11 @@ public class Server {
 					AcceptVal[1] = msg[1];
 					AcceptVal[2] = msg[2];
 					ACPCount = 1;
-					send(input);
-					STATUS = STATUSTYPE.AFTER_SENDACCEPT;
+					for (int i = 0; i < 5; i++) {
+						if (i != ID)
+							send(input, i);
+					}
+
 				} else {
 					ACPCount++;
 					if (ACPCount >= MAJORITY) {
@@ -625,33 +629,30 @@ public class Server {
 			}
 		}
 
-		private void send(String msg) {
-			for (int i = 1; i <= 5; i++) {
-				if (i == ID) {
-					continue;
-				}
-				Socket socket;
-				try {
-					socket = new Socket(serverAddress.get(i)[0],
-							Integer.parseInt(serverAddress.get(i)[1]));
-				} catch (NumberFormatException | IOException e1) {
-					e1.printStackTrace();
-					return;
-				}
-				PrintWriter out = null;
-				try {
-					out = new PrintWriter(socket.getOutputStream(), true);
-					out.println(msg);
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-				try {
-					socket.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-					return;
-				}
+		private void send(String msg, int serverID) {
+
+			Socket socket;
+			try {
+				socket = new Socket(serverAddress.get(serverID)[0],
+						Integer.parseInt(serverAddress.get(serverID)[1]));
+			} catch (NumberFormatException | IOException e1) {
+				e1.printStackTrace();
+				return;
 			}
+			PrintWriter out = null;
+			try {
+				out = new PrintWriter(socket.getOutputStream(), true);
+				out.println(msg);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			try {
+				socket.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+				return;
+			}
+
 		}
 	}
 }
