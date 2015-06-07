@@ -16,7 +16,7 @@ public class ClientDrive {
             client.start();
 		} else {
 			port = Integer.parseInt(args[0]);
-            Client client = new Client(port,readFile("args[1]"));
+            Client client = new Client(port,readFile(args[1]));
             client.start();
 		}
 		System.out.println("Client is running");
