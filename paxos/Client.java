@@ -35,6 +35,7 @@ public class Client extends Thread {
 		this.address = addr.getHostAddress();
 		this.port = port;
 		this.serverAddress = serverAddress;
+		this.leader = leader;
 	}
 
 	@SuppressWarnings("resource")
