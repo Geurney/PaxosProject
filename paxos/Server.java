@@ -418,7 +418,7 @@ public class Server {
 					msg = sb.toString();
 					System.out.println("	send back log to client!");
 				} else {
-					msg = "Retry Server is recoverying...";
+					msg = "Retry Server is recoverying at "+ STATUS;
 					System.out.println("	send back read retry to client!");
 				}
 				out.println(msg);
@@ -565,7 +565,7 @@ public class Server {
 						AcceptVal[0] = MaxACKVal[0];
 						AcceptVal[1] = MaxACKVal[1];
 						AcceptVal[2] = MaxACKVal[2];
-						String msg = "Retry Post. Competition failed due to another ack";
+						String msg = "Retry Post. Competition failed due to another ack at " + STATUS;
 						reply(clientMsg[0], msg);
 						clientMsg[0] = null;
 						clientMsg[1] = null;
@@ -651,13 +651,13 @@ public class Server {
 			String operation = cmd[0];
 			switch (operation) {
 			case "post": {
-				String msg = "Retry Post. Mutiple concurrent Posts at one server!";
+				String msg = "Retry Post. Mutiple concurrent Posts at one server at " + STATUS;
 				reply(cmd[1], msg);
 			}
 				break;
 			case "prepare": {
 				if (process_prepare(cmd[1].split(",")) == true) {
-					String msg = "Retry Post. Competition failed due to another prepare.";
+					String msg = "Retry Post. Competition failed due to another prepare at " + STATUS;
 					reply(clientMsg[0], msg);
 					clientMsg[0] = null;
 					clientMsg[1] = null;
@@ -683,7 +683,7 @@ public class Server {
 						if (i != ID)
 							send(input, i);
 					}
-					String msg = "Retry Post. Competition failed due to another accept";
+					String msg = "Retry Post. Competition failed due to another accept at " + STATUS ;
 					reply(clientMsg[0], msg);
 					clientMsg[0] = null;
 					clientMsg[1] = null;
@@ -721,14 +721,14 @@ public class Server {
 			String operation = cmd[0];
 			switch (operation) {
 			case "post": {
-				String msg = "Retry Post. Mutiple concurrent Posts at one server!";
+				String msg = "Retry Post. Mutiple concurrent Posts at one server at " + STATUS;
 				reply(cmd[1], msg);
 			}
 				break;
 			case "prepare":
 				if (process_prepare(cmd[1].split(",")) == true) {
 					if (clientMsg[0] != null) {
-						String msg = "Retry Post. Competition failed due to another Prepare";
+						String msg = "Retry Post. Competition failed due to another prepare at " + STATUS;
 						reply(clientMsg[0], msg);
 					}
 					clientMsg[0] = null;
@@ -756,7 +756,7 @@ public class Server {
 					}
 					System.out.println("	send " + input + " to all");
 					if (clientMsg[0] != null) {
-						String msg = "Retry Post. Competition failed due to another accept";
+						String msg = "Retry Post. Competition failed due to another accept at " + STATUS;
 						reply(clientMsg[0], msg);
 					}
 					clientMsg[0] = null;
