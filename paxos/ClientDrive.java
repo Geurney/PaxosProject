@@ -11,12 +11,14 @@ public class ClientDrive {
 		int port;
 		if (args.length == 0) {
 			port = 8000;
-			System.out.println("Please specifiy the port!");
+//			System.out.println("Please specifiy the port!");
+            Client client = new Client(port,readFile("paxos/Server.txt"));
+            client.start();
 		} else {
 			port = Integer.parseInt(args[0]);
+            Client client = new Client(port,readFile("args[1]"));
+            client.start();
 		}
-		Client client = new Client(port,readFile("Server.txt"));
-		client.start();
 		System.out.println("Client is running");
 	}
 	

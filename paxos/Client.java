@@ -44,7 +44,7 @@ public class Client extends Thread {
 		try {
 			InetAddress hostname = InetAddress.getByName(address);
 			serverSocket = new ServerSocket(port, 5, hostname);
-			serverSocket.setSoTimeout(3000);
+			serverSocket.setSoTimeout(10000);
 		} catch (IOException e) {
 			e.printStackTrace();
 			return;
