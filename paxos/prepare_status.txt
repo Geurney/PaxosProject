@@ -1,0 +1,125 @@
+After_Prepare状态
+进入状态：
+Wait状态下接收到post
+
+在状态中：
+1. post 
+	当前还正在处理一个post，不能马上处理第二个.
+	返回Retry Post Multiple concurrent Posts at one server.消息给client，让client重试。
+	状态不改变。
+	
+2. prepare"b[0],b[1],b[2]
+	if(b[2]==log.size()) 如果另一个prepare是来竞争同一个entry
+		if(b[0]>BallotNum[0] || (b[0]==BallotNum[0] && b[1] > BallotNum[1])) 如果另一个prepare的Ballot比我自己的大
+			1. 拒绝当前的client post请求
+				返回Retry Post Competition Failed due to another prepare. 给Client
+				ClientMsg = new String[2]
+			2. 更新BallotNum
+				BallotNum[0]=b[0]
+				BallotNum[1]=b[1]
+				BallotNum[2]=b[2]
+			3. 向给BallotNum[1]发送ack，参与到竞选中
+				ack”BallotNum[0],BallotNum[1],BallotNum[2]"AcceptNum[0],AcceptNum[1],AcceptNum[2]"AcceptVal[0]'AcceptVal[1]
+			4. Status转换成Wait
+		else 如果比我所在的选举小
+			ignore 状态不改变。
+	else if(b[2]>log.size()) 如果另一个prepare是来竞争后面的entry，说明我缺少了一些entries
+		1. 拒绝当前的client post请求
+			返回Retry Post Missing Entry in Log, Server needs recovery.给Client。
+			ClientMsg = new String[2]
+		2. 发送help给其他server，请求log来填补自己缺失的entries. 对于prepare不回复
+		3. Status转换成Wait
+	else if(b[2]<log.size()) 如果另一个prepare是来竞争之前的entry，说明他少了一些entries
+		发送log给b[1]让其补齐log, 对于prepare不回复, 状态不改变。
+		
+3. accept"a[0],a[1],a[2]"v[0]'v[1]
+	if(a[2]==log.size()) 如果让我accept的是下一个entry，并且得到了Majority的ACK, 而我当前正在竞争这个entry
+		if(a[0]>BallotNum[0] || (a[0] == BallotNum[0] && a[1] > BallotNump[1])) 如果你的ballotNum比我大，意味着你的选举要比我能拿到majority。不可能是我自己的选举，因为我没有发出accept。这个accept不是我所在选举中的,但我还未接收到该选举的prepare，却先接收到了accept（可能有participant里我近）。那么当我接收到prepare的时候我可以直接忽略掉
+				1. 拒绝当前的client post请求
+					返回Retry Post Competition Failed due to another accept. 给Client
+					ClientMsg = new String[2]
+				2. 更新AcceptNum
+					AcceptNum[0]=a[0]
+					AcceptNum[1]=a[1]
+					AcceptNum[2]=a[2]
+					AcceptVal[0]=v[0]
+					AcceptVal[1]=v[1]
+					BallotNum[1]=a[0]
+					BallotNum[2]=a[1]
+					BallotNum[0]=a[2]
+				3. 向其他人发送accept
+					accept"BallotNum[0],BallotNum[1],BallotNum[2]"AcceptVal[0]'AcceptVal[1]
+				4. ACPCount=1
+				5. 状态转换成After_SendAccept
+			else 如果比我所在的选举小
+				ignore 状态保持不变
+	else if(a[2] < log.size()) 如果让我accept的是以前的entry，这个accept应该是由于延迟造成的
+			ignore 状态保持不变
+	else if (a[2] > log.size()) 如果让我accept的之后的entry，说明我的log有缺失
+			1. 拒绝当前的client post请求
+					返回Retry Post Competition Failed due to another accept. 给Client
+					ClientMsg = new String[2]
+			2. 发送help给其他server, 补齐log。对于这个accept我无法回复，此时我的BallotNum不改变.
+			3. Status转换成Wait
+		
+4. ack"b[0],b[1],b[2]"a[0],a[1],a[2]"v[0],v[1]   //server3 prepare时 server2 发出了accept  
+	// server2 prepare<1,2,0>， receive ack<1,2,0><0,0,-1><null,null>, send accept<1,2,0><myvalue,<1,2,0>>
+	// server3 send ack<1,2,0><0,0,-1><null,null>,(receive accept<1,2,0><myvalue,<1,2,0>>) prepare<2,3,0>, receive ack<2,3,0><1,2,0><myvalue,<1,2,0>>
+	if(b[2]==BallotNum[2]) 如果ACK是对于我当前prepare的回复
+		1.  ACKCount++
+		2.	if(a[2] != -1 && a[2] == BallotNum[2]) 如果有人已经在我竞争的entry上accept了，意味着他已经拿到majority的ack并广播accept了，并且有些人可能已经decide了
+				if(a[0]>MaxACKNum[0] || (a[0] == MaxACKNum[0] && a[1]> MaxACKNum[1]))
+					MaxACKNum[0]=a[0]
+					MaxACKNum[1]=a[1]
+					MaxACKNum[2]=a[2]
+					MaxACKVal[0]=v[0]
+					MaxACKVal[1]=v[1]	
+		3. if(ACKCount == Majority) 当收到了Majority的ACK回复时，bottom如何判断。
+			if(MaxACKNum[0] == -1)
+				AcceptVal[0]=ClientMsg[1]
+			else 
+				AcceptVal[0]=MaxACKVal[0]
+				拒绝当前的client post请求
+					返回Retry Post Competition Failed due to another ack. 给Client
+					ClientMsg = new String[2]
+			AcceptNum[0]=BallotNum[0]
+			AcceptNum[1]=BallotNum[1]
+			AcceptNum[2]=BallotNum[2]
+			AcceptVal[1]=BallotNum[0]+","+BallotNum[1]+","+BallotNum[2]
+			ACPCount=1
+			// BallotNum不改变，更改AcceptVal[1]
+			向其他server发送accept
+				accept"BallotNum[0],BallotNum[1],BallotNum[2]"AcceptVal[0]'AcceptVal[1]
+			Status转换成After_SendAccept
+	else if(b[2] < BallotNum[2]) 如果ACK是对于我以前prepare的回复
+		ignore
+		
+5. help“ID
+	发送自己的log给ID（不判断自己的状态，为了解决全部处于recover模式时，大家能找到最长的log。可能自己是recovery中，接收的也是recovery中的（模式转变成Normal），然后read会不全）
+
+6. log
+	根据接收的LOG size和自己的log size进行对自己log的填补。
+	if(LOG.size > log.size) 如果自己的log缺失
+		int index = log.size;
+		还是要从最后一个比较，看谁的ballotnumber大（因为上面4的改写，可能有些先decide了，结果down了，但其实最后一格被改了）
+		for (int i = index; i < LOG.size; i++) 
+			log.add(LOG.get(index));
+	正常情况下BallotNum-AcceptNum <=1 只有接收到prepare后未接受到accept前会有差别
+	if(AcceptNum[2] < LastEntryAcceptNum[2]) 如果我的AcceptNum比我的log里最新的entry的AcceptNum小
+		AccetpNum[0]=LastEntryAcceptNum[0]
+		AccetpNum[1]=LastEntryAcceptNum[1]
+		AccetpNum[2]=LastEntryAcceptNum[2]
+		AccetpVal[0]=LastEntryAcceptVal[0]
+		AccetpVal[1]=LastEntryAcceptVal[1]
+	if(BallotNum[2] < AcceptNum[2])
+		BallotNum[0] = AcceptNum[0]
+		BallotNum[1] = AcceptNum[1]
+		BallotNum[2] = AcceptNum[2]
+
+7. read 
+	if(MODE==RECOVERY) 如果处于恢复状态（还未接收到第一个log消息），
+		返回server is recovering的消息给client.
+		发送help给其他server，请求log消息
+	else 
+		返回log给client
+   
