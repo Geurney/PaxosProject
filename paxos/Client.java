@@ -1,7 +1,6 @@
 package paxos;
 
 import java.io.BufferedReader;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
@@ -25,7 +24,12 @@ public class Client extends Thread {
 	 */
 	private final ArrayList<String[]> serverAddress;
 
-	public Client(int port, ArrayList<String[]> serverAddress)
+	/**
+	 * Default leader
+	 */
+	private int leader;
+
+	public Client(int port, ArrayList<String[]> serverAddress, int leader)
 			throws IOException {
 		InetAddress addr = InetAddress.getLocalHost();
 		this.address = addr.getHostAddress();
@@ -33,6 +37,7 @@ public class Client extends Thread {
 		this.serverAddress = serverAddress;
 	}
 
+	@SuppressWarnings("resource")
 	@Override
 	public void run() {
 		// TODO Auto-generated method stub
@@ -51,11 +56,11 @@ public class Client extends Thread {
 		}
 
 		Random rand = new Random();
-		int server = 0;
+		int server = leader;
 		System.out.println("Please enter a command:");
 		while ((command = sc.nextLine()) != null) {
 			connectSite(server, command, address, port);
-			System.out.println("Connect to server "+server);
+			System.out.println("Connect to server " + server);
 			Socket mysocket = null;
 			try {
 				// Wait for a client to connect (blocking)
@@ -68,7 +73,6 @@ public class Client extends Thread {
 				System.out.println("Client times out! Please enter a command:");
 				continue;
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 			BufferedReader in;
@@ -83,11 +87,12 @@ public class Client extends Thread {
 			String input;
 			try {
 				input = in.readLine();
-				if (command.contains("post"))
+				if (command.contains("post")) {
 					System.out.println(input);
-				else {
+				} else {
 					String[] inStrings = input.split("\"");
-					for(String i:inStrings) System.out.println(i);
+					for (String i : inStrings)
+						System.out.println(i);
 				}
 				if (input.contains("Retry")) {
 					int temp = rand.nextInt(5);
@@ -103,7 +108,6 @@ public class Client extends Thread {
 		try {
 			serverSocket.close();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -117,16 +121,20 @@ public class Client extends Thread {
 			e.printStackTrace();
 			return;
 		}
-
 		PrintWriter out;
 		try {
 			out = new PrintWriter(mysocket.getOutputStream(), true);
 		} catch (IOException e) {
 			e.printStackTrace();
+			try {
+				mysocket.close();
+			} catch (IOException e1) {
+				e1.printStackTrace();
+			}
 			return;
 		}
 
-		if (command.contains("post"))
+		if (command.contains("post")) {
 			out.println(command.substring(0, command.indexOf(' '))
 					+ "\""
 					+ IP
@@ -135,9 +143,9 @@ public class Client extends Thread {
 					+ "\""
 					+ command.substring(command.indexOf(' ') + 1,
 							command.length()));
-		else
+		} else {
 			out.println(command + "\"" + IP + "\'" + port);
-		// Close TCP connection
+		}
 		try {
 			mysocket.close();
 		} catch (IOException e) {

@@ -9,14 +9,21 @@ public class ClientDrive {
 
 	public static void main(String[] args) throws IOException {
 		int port;
+		int leader;
 		if (args.length == 0) {
 			port = 8000;
-//			System.out.println("Please specifiy the port!");
-            Client client = new Client(port,readFile("paxos/Server.txt"));
+			leader = 0;
+            Client client = new Client(port, readFile("paxos/Server.txt"), leader);
+            client.start();
+		} else if (args.length == 2){
+			port = Integer.parseInt(args[0]);
+			leader = 0;
+            Client client = new Client(port, readFile(args[1]), leader);
             client.start();
 		} else {
 			port = Integer.parseInt(args[0]);
-            Client client = new Client(port,readFile(args[1]));
+			leader = Integer.parseInt(args[2]);
+            Client client = new Client(port, readFile(args[1]), leader);
             client.start();
 		}
 		System.out.println("Client is running");

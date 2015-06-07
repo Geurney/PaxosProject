@@ -9,10 +9,9 @@ public class ServerDrive {
 
 		public static void main(String[] args) throws IOException {
 			Server server1 = new Server(readFile(args[0]));
-
 			server1.start();
-
 		}
+		
 		/**
 		 * Read Server Address from File.
 		 * 

@@ -1,6 +1,6 @@
 1. Client Command Format:
-  post Hello how are you?
-  read 
+  Post Hello how are you?
+  Read 
   Retry
   Log"1(index)'Hello'1,1(b)"1(index)'Hello'1,1(b)
 2. Client MSG format:
