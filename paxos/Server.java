@@ -377,7 +377,7 @@ public class Server {
 			}
 		}
 
-		private void process_prepare(String[] ballot_string) {
+		private boolean process_prepare(String[] ballot_string) {
 			int[] ballot = { Integer.parseInt(ballot_string[0]),
 					Integer.parseInt(ballot_string[1]) };
 			if (ballot[0] > BallotNum[0]
@@ -390,7 +390,8 @@ public class Server {
 						+ AcceptVal[2];
 				send(msg, BallotNum[1]);
 				System.out.println("	" + ID + " send " + msg);
-			}
+                return true;
+            }else return false;
 		}
 
 		private void process_help(int serverID, String[] AcceptVal) {
@@ -576,13 +577,14 @@ public class Server {
 			}
 				break;
 			case "prepare": {
-				process_prepare(cmd[1].split(","));
+                if(process_prepare(cmd[1].split(","))==true){
 				STATUS = STATUSTYPE.WAIT;
 				System.out.println("STATE CHANGE TO " + STATUS);
 				String msg = "Retry After Prepare Prepare";
 				reject(clientMsg[0], msg);
 				clientMsg[0] = null;
 				clientMsg[1] = null;
+                }
 			}
 				break;
 			case "accept": {
@@ -636,13 +638,15 @@ public class Server {
 			}
 				break;
 			case "prepare":
-				process_prepare(cmd[1].split(","));
+                if(process_prepare(cmd[1].split(","))==true){
 				STATUS = STATUSTYPE.WAIT;
 				System.out.println("STATE CHANGE TO " + STATUS);
 				String msg = "Retry After SendAccept Prepare";
-				reject(clientMsg[0], msg);
+                if(clientMsg[0]!=null)
+				   reject(clientMsg[0], msg);
 				clientMsg[0] = null;
 				clientMsg[1] = null;
+                }
 				break;
 
 			case "accept":
@@ -664,7 +668,8 @@ public class Server {
 					}
 					System.out.println(ID + " send " + input);
 					String msg2 = "Retry After SendAccept Accept";
-					reject(clientMsg[0], msg2);
+                    if(clientMsg[0]!=null)
+					   reject(clientMsg[0], msg2);
 					clientMsg[0] = null;
 					clientMsg[1] = null;
 				} else {
