@@ -2,31 +2,38 @@ Site0 Virgina
 52.7.190.71
 172.30.0.167
 ssh -i DuangKeyVirginia.pem ubuntu@52.7.190.71
+cd PaxosProject
 java paxos.ServerDrive paxos/Config0.txt
 
 Site1 California
 52.8.114.83
 172.30.1.209
 ssh -i DuangKeyCalifornia.pem ubuntu@52.8.114.83
+cd PaxosProject
 java paxos.ServerDrive paxos/Config1.txt
 
 Site2 Sydney
 54.66.181.29
 172.30.0.121
 ssh -i DuangKeySydney.pem ubuntu@54.66.181.29
+cd PaxosProject
 java paxos.ServerDrive paxos/Config2.txt
 
 Site3 Singapore
 52.74.202.28
 172.30.0.141
 ssh -i DuangKeySingapore.pem ubuntu@52.74.202.28
+cd PaxosProject
 java paxos.ServerDrive paxos/Config3.txt
 
 Site4 Sao
 54.207.111.155
 172.30.0.37
 ssh -i DuangKeySao.pem ubuntu@54.207.111.155
+cd PaxosProject
 java paxos.ServerDrive paxos/Config4.txt
+
+java paxos/ClientDrive 8001 paxos/Server.txt 0
 
 sudo -s
 apt-get install git
@@ -36,3 +43,9 @@ git clone https://github.com/Geurney/PaxosProject.git
 cd PaxosProject
 javac paxos/*.java
 java paxos.ServerDrive paxos/Config.txt
+
+sudo -s
+git pull
+rm -f paxos/*.class
+javac paxos/*.java
+

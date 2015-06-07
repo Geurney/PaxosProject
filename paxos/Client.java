@@ -40,7 +40,6 @@ public class Client extends Thread {
 	@SuppressWarnings("resource")
 	@Override
 	public void run() {
-		// TODO Auto-generated method stub
 		super.run();
 		String command;
 		Scanner sc = null;
@@ -59,8 +58,8 @@ public class Client extends Thread {
 		int server = leader;
 		System.out.println("Please enter a command:");
 		while ((command = sc.nextLine()) != null) {
+			System.out.println("Connecting to server " + server);
 			connectSite(server, command, address, port);
-			System.out.println("Connect to server " + server);
 			Socket mysocket = null;
 			try {
 				// Wait for a client to connect (blocking)
