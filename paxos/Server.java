@@ -654,7 +654,7 @@ public class Server {
 									send(input, i);
 							}
 							// ACPCount = 1;
-							ACPCount = 2;
+							ACPCount = 1;
 							STATUS = STATUSTYPE.AFTER_SENDACCEPT;
 							System.out.println("	ACCEPT <" + ballot[0] + ","
 									+ ballot[1] + "," + ballot[2] + "> " + "<"
@@ -692,7 +692,7 @@ public class Server {
 								send(input, i);
 						}
 						// ACPCount = 1;
-						ACPCount = 2;
+						ACPCount = 1;
 						STATUS = STATUSTYPE.AFTER_SENDACCEPT;
 						System.out.println("	ACCEPT <" + ballot[0] + ","
 								+ ballot[1] + "," + ballot[2] + "> " + "<"
@@ -811,7 +811,7 @@ public class Server {
 								send(input, i);
 						}
 						// ACPCount=1
-						ACPCount = 2;
+						ACPCount = 1;
 						STATUS = STATUSTYPE.AFTER_SENDACCEPT;
 						System.out.println("	ACCEPT <" + ballot[0] + ","
 								+ ballot[1] + "," + ballot[2] + "> " + "<"
@@ -1002,7 +1002,7 @@ public class Server {
 							send(input, i);
 					}
 					// ACPCount=1
-					ACPCount = 2;
+					ACPCount = 1;
 					System.out.println("	ACCEPT <" + BallotNum[0] + ","
 							+ BallotNum[1] + "," + BallotNum[2] + "> " + "<"
 							+ AcceptVal[0] + "<" + AcceptVal[1] + ">>");
