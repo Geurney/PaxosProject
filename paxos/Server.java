@@ -695,6 +695,7 @@ public class Server {
 						}
 
 						ACPCount = 2;
+
 						STATUS = STATUSTYPE.AFTER_SENDACCEPT;
 						System.out.println("	ACCEPT <" + ballot[0] + ","
 								+ ballot[1] + "," + ballot[2] + "> " + "<"
@@ -813,6 +814,7 @@ public class Server {
 								send(input, i);
                         }
 						ACPCount = 2;
+
 						STATUS = STATUSTYPE.AFTER_SENDACCEPT;
 						System.out.println("	ACCEPT <" + ballot[0] + ","
 								+ ballot[1] + "," + ballot[2] + "> " + "<"
@@ -1035,7 +1037,6 @@ public class Server {
 						if (Debug) {
 							System.out.println("	STATUS Change to " + STATUS);
 						}
-
 					}
 				}
 
