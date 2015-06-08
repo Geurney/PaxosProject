@@ -323,11 +323,11 @@ public class Server {
 					e.printStackTrace();
 				}
 				System.out.println("****BallotNum: " + BallotNum[0] + ","
-						+ BallotNum[1]);
+						+ BallotNum[1] + "," + BallotNum[2]);
 				System.out.println("****AcceptNum: " + AcceptNum[0] + ","
-						+ AcceptNum[1]);
+						+ AcceptNum[1] + "," + AcceptNum[2]);
 				System.out.println("****AcceptVal: " + AcceptVal[0] + ","
-						+ AcceptVal[1] + "," + AcceptVal[2]);
+						+ AcceptVal[1]);
 			}
 		}
 
