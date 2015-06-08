@@ -50,6 +50,7 @@ public class Server {
 	private volatile MODETYPE MODE;
 
 	private volatile long StartTime;
+	private boolean TimerEnable = false;
 
 	/**
 	 * BallotNum, ID
@@ -1078,19 +1079,21 @@ public class Server {
 		public void run() {
 			long CurrentTime;
 			while (true) {
-				try {
-					CurrentTime = System.currentTimeMillis();
-					if ((CurrentTime - StartTime) / 1000 > 13) {
-						synchronized (STATUS) {
-							if (STATUS != STATUSTYPE.WAIT
-									&& STATUS != STATUSTYPE.FAIL) {
-								STATUS = STATUSTYPE.WAIT;
+				if (TimerEnable) {
+					try {
+						CurrentTime = System.currentTimeMillis();
+						if ((CurrentTime - StartTime) / 1000 > 13) {
+							synchronized (STATUS) {
+								if (STATUS != STATUSTYPE.WAIT
+										&& STATUS != STATUSTYPE.FAIL) {
+									STATUS = STATUSTYPE.WAIT;
+								}
 							}
 						}
+						Thread.sleep(1200);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
 					}
-					Thread.sleep(1200);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
 				}
 			}
 		}
