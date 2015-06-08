@@ -549,8 +549,6 @@ public class Server {
 			case "post": {
 				// post"192.168.21.11'8001"Hello how are you?
 				clientMsg[0] = cmd[1]; // 192.168.21.11'8001
-				if (cmd[2].length() > 140)
-					cmd[2] = cmd[2].substring(0, 140);
 				clientMsg[1] = cmd[2]; // Hello how are you?
 				if (clientMsg[1].length() > 140) {
 					clientMsg[1] = clientMsg[1].substring(0, 140);
