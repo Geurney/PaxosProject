@@ -28,6 +28,8 @@ public class Client extends Thread {
 	 * Default leader
 	 */
 	private int leader;
+	
+	private String publicIP;
 
 	public Client(int port, ArrayList<String[]> serverAddress, int leader)
 			throws IOException {
@@ -36,6 +38,7 @@ public class Client extends Thread {
 		this.port = port;
 		this.serverAddress = serverAddress;
 		this.leader = leader;
+		this.publicIP = serverAddress.get(5)[0];
 	}
 
 	@SuppressWarnings("resource")
@@ -60,7 +63,7 @@ public class Client extends Thread {
 		System.out.println("Please enter a command:");
 		while ((command = sc.nextLine()) != null) {
 			System.out.println("Connecting to server " + server);
-			connectSite(server, command, address, port);
+			connectSite(server, command, publicIP, port);
 			Socket mysocket = null;
 			try {
 				// Wait for a client to connect (blocking)
