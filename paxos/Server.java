@@ -511,6 +511,9 @@ public class Server {
 				// post"192.168.21.11'8001"Hello how are you?
 				clientMsg[0] = cmd[1]; // 192.168.21.11'8001
 				clientMsg[1] = cmd[2]; // Hello how are you?
+				if (clientMsg[1].length > 140) {
+					clientMsg[1] = clientMsg[1].substring(0,140);
+				}
 				BallotNum[0] = BallotNum[0] + 1;
 				BallotNum[1] = ID;
 				BallotNum[2] = log.size();
