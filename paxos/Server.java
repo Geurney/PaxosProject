@@ -49,6 +49,8 @@ public class Server {
 
 	private volatile MODETYPE MODE;
 
+	private volatile long StartTime;
+
 	/**
 	 * BallotNum, ID
 	 */
@@ -92,6 +94,11 @@ public class Server {
 	private COMMThread COMM;
 
 	/**
+	 * Timer for silence
+	 */
+	private TIMERThread TIMER;
+
+	/**
 	 * Log
 	 */
 	private ArrayList<String> log;
@@ -111,7 +118,7 @@ public class Server {
 	 */
 	private String[] MaxACKVal;
 
-	private static boolean Debug = true;
+	private static boolean Debug = false;
 
 	public Server(ArrayList<String[]> config) throws IOException {
 		serverAddress = config;
@@ -149,11 +156,13 @@ public class Server {
 		// Thread
 		COMM = new COMMThread();
 		CIL = new CLIThread();
+		TIMER = new TIMERThread();
 	}
 
 	public void start() {
 		CIL.start();
 		COMM.start();
+		TIMER.start();
 	}
 
 	/**
@@ -282,9 +291,11 @@ public class Server {
 					continue;
 				}
 				synchronized (STATUS) {
+					System.out.println("INPUT: " + input);
+					StartTime = System.currentTimeMillis();
 					if (Debug) {
 						System.out.println("CURRENT STATE: " + STATUS);
-						System.out.println("	INPUT: " + input);
+
 						System.out.println("	BallotNum: " + BallotNum[0] + ","
 								+ BallotNum[1] + "," + BallotNum[2]);
 						System.out.println("	AcceptNum: " + AcceptNum[0] + ","
@@ -304,7 +315,10 @@ public class Server {
 								if (i != ID)
 									send(msg, i);
 							}
-							System.out.println("	" + "Send out help to all...");
+							if (Debug) {
+								System.out.println("	"
+										+ "Send out help to all...");
+							}
 						}
 					}
 						break;
@@ -541,7 +555,7 @@ public class Server {
 
 				ACKCount = 1;
 				STATUS = STATUSTYPE.AFTER_PREPARE;
-				System.out.println("Prepare <" + BallotNum[0] + ","
+				System.out.println("	Prepare <" + BallotNum[0] + ","
 						+ BallotNum[1] + "," + BallotNum[2] + ">");
 				if (Debug) {
 					System.out.println("	" + " send " + msg + " to all");
@@ -628,7 +642,7 @@ public class Server {
 							// ACPCount = 1;
 							ACPCount = 2;
 							STATUS = STATUSTYPE.AFTER_SENDACCEPT;
-							System.out.println("ACCEPT <" + ballot[0] + ","
+							System.out.println("	ACCEPT <" + ballot[0] + ","
 									+ ballot[1] + "," + ballot[2] + "> " + "<"
 									+ msg[0] + "<" + msg[1] + ">>");
 							if (Debug) {
@@ -666,7 +680,7 @@ public class Server {
 						// ACPCount = 1;
 						ACPCount = 2;
 						STATUS = STATUSTYPE.AFTER_SENDACCEPT;
-						System.out.println("ACCEPT <" + ballot[0] + ","
+						System.out.println("	ACCEPT <" + ballot[0] + ","
 								+ ballot[1] + "," + ballot[2] + "> " + "<"
 								+ msg[0] + "<" + msg[1] + ">>");
 						if (Debug) {
@@ -730,7 +744,7 @@ public class Server {
 								+ AcceptNum[2] + "\"" + AcceptVal[0] + "\'"
 								+ AcceptVal[1];
 						send(ack, BallotNum[1]);
-						System.out.println("ACK <" + BallotNum[0] + ","
+						System.out.println("	ACK <" + BallotNum[0] + ","
 								+ BallotNum[1] + "," + BallotNum[2] + "> <"
 								+ AcceptNum[0] + "," + AcceptNum[1] + ","
 								+ AcceptNum[2] + "> <" + AcceptVal[0] + " <"
@@ -785,7 +799,7 @@ public class Server {
 						// ACPCount=1
 						ACPCount = 2;
 						STATUS = STATUSTYPE.AFTER_SENDACCEPT;
-						System.out.println("ACCEPT <" + ballot[0] + ","
+						System.out.println("	ACCEPT <" + ballot[0] + ","
 								+ ballot[1] + "," + ballot[2] + "> " + "<"
 								+ val[0] + "<" + val[1] + ">>");
 						if (Debug) {
@@ -856,9 +870,10 @@ public class Server {
 							if (i != ID)
 								send(msg, i);
 						}
-						System.out.println("ACCEPT <" + BallotNum[0] + ","
-								+ BallotNum[1] + "," + BallotNum[2] + "> " + "<"
-								+ AcceptVal[0] + "<" + AcceptVal[1] + ">>");
+						System.out.println("	ACCEPT <" + BallotNum[0] + ","
+								+ BallotNum[1] + "," + BallotNum[2] + "> "
+								+ "<" + AcceptVal[0] + "<" + AcceptVal[1]
+								+ ">>");
 						STATUS = STATUSTYPE.AFTER_SENDACCEPT;
 						if (Debug) {
 							System.out.println("	STATE CHANGE TO " + STATUS);
@@ -922,7 +937,7 @@ public class Server {
 								+ AcceptNum[2] + "\"" + AcceptVal[0] + "\'"
 								+ AcceptVal[1];
 						send(ack, BallotNum[1]);
-						System.out.println("ACK <" + BallotNum[0] + ","
+						System.out.println("	ACK <" + BallotNum[0] + ","
 								+ BallotNum[1] + "," + BallotNum[2] + "> <"
 								+ AcceptNum[0] + "," + AcceptNum[1] + ","
 								+ AcceptNum[2] + "> <" + AcceptVal[0] + " <"
@@ -972,9 +987,9 @@ public class Server {
 						if (i != ID)
 							send(input, i);
 					}
-					//ACPCount=1
+					// ACPCount=1
 					ACPCount = 2;
-					System.out.println("ACCEPT <" + BallotNum[0] + ","
+					System.out.println("	ACCEPT <" + BallotNum[0] + ","
 							+ BallotNum[1] + "," + BallotNum[2] + "> " + "<"
 							+ AcceptVal[0] + "<" + AcceptVal[1] + ">>");
 				} else if (ballot[0] == BallotNum[0]
@@ -987,7 +1002,7 @@ public class Server {
 						} else {
 							log.add(l);
 						}
-						System.out.println("Decide: " + AcceptVal[0] + " ID: "
+						System.out.println("	Decide: " + AcceptVal[0] + " ID: "
 								+ AcceptVal[1]);
 						if (clientMsg[0] != null) {
 							String msg = "Successfully insert to log "
@@ -1041,6 +1056,29 @@ public class Server {
 			case "read":
 				process_read(cmd[1]);
 				break;
+			}
+		}
+	}
+
+	private class TIMERThread extends Thread {
+		@Override
+		public void run() {
+			long CurrentTime;
+			while (true) {
+				try {
+					CurrentTime = System.currentTimeMillis();
+					if ((CurrentTime - StartTime) / 1000 > 13) {
+						synchronized (STATUS) {
+							if (STATUS != STATUSTYPE.WAIT
+									&& STATUS != STATUSTYPE.FAIL) {
+								STATUS = STATUSTYPE.WAIT;
+							}
+						}
+					}
+					Thread.sleep(1200);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
 			}
 		}
 	}
