@@ -17,6 +17,7 @@ Wait状态
 	3. 初始化MaxACKNum和MaxACKVal
 		MaxACKNum[0]=-1
 		MaxACKNum[1]=-1
+		MaxACKNum[2]=-1
 		MaxACKVal = new String[2];
 	4. 发送prepare给其他server
 		prepare”BallotNum[0],BallotNum[1],BallotNum[2]
@@ -34,8 +35,19 @@ Wait状态
 					状态保持不变
 			else 如果当前比我所在的选举小
 				ignore 状态保持不变
-	2. else if(b[2]< log.size()) 如果竞选的是之前的entry，发送方缺少entry
-			发送log给b[2]，让其补齐log，此时我的BallotNum不改变，状态保持不变
+	2. else if(b[2]< log.size() -1) 如果竞选的是之前的entry，发送方缺少entry
+				发送log给b[1]，让其补齐log，此时我的BallotNum不改变，状态保持不变
+	  else if(b[2] == log.size()-1)
+			if(b[0]>BallotNum[0] || (b[0]==BallotNum[0] && b[1] > BallotNum[1])) 如果当前比我所在的选举的Ballot大（等于可能是为了重试/ballot置零）
+				1. 更新BallotNum
+					BallotNum[0]=b[0]
+					BallotNum[1]=b[1]
+					BallotNum[2]=b[2]
+				2. 向给BallotNum[1]发送ack，参与到竞选中
+					ack”BallotNum[0],BallotNum[1],BallotNum[2]"AcceptNum[0],AcceptNum[1],AcceptNum[2]"AcceptVal[0]'AcceptVal[1]
+					状态保持不变
+			else 
+				发送log给b[1]，让其补齐log，此时我的BallotNum不改变，状态保持不变
 	3. else if(b[2] > log.size()) 如果竞选的是之后的entry， 则说明我缺少entry
 			发送help请求给其他server,让自己补齐log，此时我的BallotNum不改变，状态保持不变
 3. accept"a[0],a[1],a[2]"v[0]'v[1]

@@ -62,7 +62,7 @@ Wait状态下接收到post
 			2. 发送help给其他server, 补齐log。对于这个accept我无法回复，此时我的BallotNum不改变.
 			3. Status转换成Wait
 		
-4. ack"b[0],b[1],b[2]"a[0],a[1],a[2]"v[0],v[1]   //server3 prepare时 server2 发出了accept  
+4. ack"b[0],b[1],b[2]"a[0],a[1],a[2]"v[0]'v[1]   //server3 prepare时 server2 发出了accept  
 	// server2 prepare<1,2,0>， receive ack<1,2,0><0,0,-1><null,null>, send accept<1,2,0><myvalue,<1,2,0>>
 	// server3 send ack<1,2,0><0,0,-1><null,null>,(receive accept<1,2,0><myvalue,<1,2,0>>) prepare<2,3,0>, receive ack<2,3,0><1,2,0><myvalue,<1,2,0>>
 	if(b[2]==BallotNum[2]) 如果ACK是对于我当前prepare的回复

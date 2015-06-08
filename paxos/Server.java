@@ -433,7 +433,6 @@ public class Server {
 				}
 				sb.deleteCharAt(sb.length() - 1);
 				msg = sb.toString();
-
 			}
 			reply(address, msg);
 		}
@@ -555,7 +554,24 @@ public class Server {
 					} else {
 						// do nothing
 					}
-				} else if (ballot[2] < log.size()) {
+				} else if (ballot[2] == log.size() - 1) {
+					if (ballot[0] > BallotNum[0]
+							|| (ballot[0] == BallotNum[0] && ballot[1] > BallotNum[1])) {
+						BallotNum[0] = ballot[0];
+						BallotNum[1] = ballot[1];
+						BallotNum[2] = ballot[2];
+						String msg = "ack\"" + BallotNum[0] + ","
+								+ BallotNum[1] + "," + BallotNum[2] + "\""
+								+ AcceptNum[0] + "," + AcceptNum[1] + ","
+								+ AcceptNum[2] + "\"" + AcceptVal[0] + "\'"
+								+ AcceptVal[1] + "\'";
+						send(msg, BallotNum[1]);
+						System.out.println("	" + "send " + msg + " to "
+								+ BallotNum[1]);
+					} else {
+						process_help(ballot[1]);
+					}
+				} else if (ballot[2] < log.size() - 1) {
 					process_help(ballot[1]);
 				} else if (ballot[2] > log.size()) {
 					sendHelp();
@@ -578,9 +594,9 @@ public class Server {
 							String[] msg = cmd[2].split("\'");
 							AcceptVal[0] = msg[0];
 							AcceptVal[1] = msg[1];
-							BallotNum[0] = ballot[0];
-							BallotNum[1] = ballot[1];
-							BallotNum[2] = ballot[2];
+				//			BallotNum[0] = ballot[0];
+				//			BallotNum[1] = ballot[1];
+				//			BallotNum[2] = ballot[2];
 							for (int i = 0; i < 5; i++) {
 								if (i != ID)
 									send(input, i);
@@ -594,8 +610,32 @@ public class Server {
 					} else {
 						System.out.println("	ignore small accepted.");
 					}
-				} else if (ballot[2] < log.size()) {
-					System.out.println("	ignore prevoius accepted.");
+				} else if (ballot[2] == log.size() - 1) {
+					if (ballot[0] > BallotNum[0]
+							|| (ballot[0] == BallotNum[0] && ballot[1] > BallotNum[1])) {
+						//if (!(ballot[0] == AcceptNum[0] && ballot[1] == AcceptNum[1])) {
+							AcceptNum[0] = ballot[0];
+							AcceptNum[1] = ballot[1];
+							AcceptNum[2] = ballot[2];
+							String[] msg = cmd[2].split("\'");
+							AcceptVal[0] = msg[0];
+							AcceptVal[1] = msg[1];
+				//			BallotNum[0] = ballot[0];
+				//			BallotNum[1] = ballot[1];
+				//			BallotNum[2] = ballot[2];
+							for (int i = 0; i < 5; i++) {
+								if (i != ID)
+									send(input, i);
+							}
+							ACPCount = 1;
+							STATUS = STATUSTYPE.AFTER_SENDACCEPT;
+							System.out.println("	STATE CHANGE TO " + STATUS);
+					//	} else {
+				//			System.out.println("	has already accepted.");
+					//	}
+					}
+				} else if (ballot[2] < log.size() - 1) {
+					System.out.println("	ignore previous accepted.");
 				} else if (ballot[2] > log.size()) {
 					sendHelp();
 				}
@@ -685,9 +725,9 @@ public class Server {
 						String[] val = cmd[2].split("\'");
 						AcceptVal[0] = val[0];
 						AcceptVal[1] = val[1];
-						BallotNum[0] = AcceptNum[0];
-						BallotNum[1] = AcceptNum[1];
-						BallotNum[2] = AcceptNum[2];
+					//	BallotNum[0] = AcceptNum[0];
+					//	BallotNum[1] = AcceptNum[1];
+					//	BallotNum[2] = AcceptNum[2];
 						for (int i = 0; i < 5; i++) {
 							if (i != ID)
 								send(input, i);
@@ -720,9 +760,9 @@ public class Server {
 				int[] accept = { Integer.parseInt(accept_string[0]),
 						Integer.parseInt(accept_string[1]),
 						Integer.parseInt(accept_string[2]) };
-				if (ballot[2] == BallotNum[2]) {
+				if (ballot[0]==BallotNum[0] && ballot[1]==BallotNum[1]) {
 					ACKCount++;
-					if (accept[2] != -1 && accept[2] == BallotNum[2]) {
+					if (accept[2] != -1 && accept[2] >= BallotNum[2]) {
 						if (accept[0] > MaxACKNum[0]
 								|| (accept[0] == MaxACKNum[0] && accept[1] > MaxACKNum[1])) {
 							MaxACKNum[0] = accept[0];
@@ -737,7 +777,7 @@ public class Server {
 							AcceptVal[0] = clientMsg[1];
 						} else {
 							AcceptVal[0] = MaxACKVal[1];
-							String msg = "Retry Post. Competiton Failed due to another ack.";
+							String msg = "Retry Post. Competition Failed due to another ack.";
 							reply(clientMsg[0], msg);
 							clientMsg = new String[2];
 						}
@@ -792,9 +832,9 @@ public class Server {
 				break;
 			case "prepare": {
 				String[] ballot_string = cmd[1].split(",");
-				int[] ballot = { Integer.parseInt(ballot_string[0]),
+				int[] ballot = {Integer.parseInt(ballot_string[0]),
 						Integer.parseInt(ballot_string[1]),
-						Integer.parseInt(ballot_string[2]) };
+						Integer.parseInt(ballot_string[2])};
 				if (ballot[2] == log.size()) {
 					if (ballot[0] > BallotNum[0]
 							|| (ballot[0] == BallotNum[0] && ballot[1] > BallotNum[1])) {
@@ -837,7 +877,47 @@ public class Server {
 				String[] ballot_string = cmd[1].split(",");
 				int[] ballot = { Integer.parseInt(ballot_string[0]),
 						Integer.parseInt(ballot_string[1]),
-						Integer.parseInt(ballot_string[2]) };
+						Integer.parseInt(ballot_string[2])};
+				if (ballot[0] > BallotNum[0]
+							|| (ballot[0] == BallotNum[0] && ballot[1] >= BallotNum[1])) {
+						if (!(ballot[0] == AcceptNum[0] && ballot[1] == AcceptNum[1])) {
+							AcceptNum[0] = ballot[0];
+							AcceptNum[1] = ballot[1];
+							AcceptNum[2] = ballot[2];
+							String[] msg = cmd[2].split("\'");
+							AcceptVal[0] = msg[0];
+							AcceptVal[1] = msg[1];
+				//			BallotNum[0] = ballot[0];
+				//			BallotNum[1] = ballot[1];
+				//			BallotNum[2] = ballot[2];
+							for (int i = 0; i < 5; i++) {
+								if (i != ID)
+									send(input, i);
+							}
+							ACPCount = 1;
+						} else {
+							ACPCount++;
+							if (ACPCount == MAJORITY) {
+								String l = AcceptVal[0] + "\'" + AcceptVal[1];
+								if (log.size() - 1 == BallotNum[2]) {
+									log.set(BallotNum[2], l);
+								} else {
+									log.add(l);
+								}
+								if (clientMsg[0] != null) {
+									String msg = "Successfully insert to log "
+											+ AcceptVal[1];
+									reply(clientMsg[0], msg);
+									clientMsg = new String[2];
+									System.out.println("	Server " + ID + " send "+ msg + " to client.");
+								}
+								STATUS = STATUSTYPE.WAIT;
+								System.out.println("	STATUS Change to " + STATUS);
+							}
+						}
+				}
+						
+			/*			
 				if (ballot[2] == BallotNum[2]) {
 					if (ballot[0] == BallotNum[0] && ballot[1] == BallotNum[1]) {
 						ACPCount++;
@@ -889,7 +969,7 @@ public class Server {
 					}
 					sendHelp();
 					STATUS = STATUSTYPE.WAIT;
-				}
+				}*/
 				break;
 			case "help":
 				process_help(Integer.parseInt(cmd[1]));
