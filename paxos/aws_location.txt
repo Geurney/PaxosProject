@@ -33,6 +33,7 @@ ssh -i DuangKeySao.pem ubuntu@54.207.111.155
 cd PaxosProject
 java paxos.ServerDrive paxos/Config4.txt
 
+ssh -i DuangKeyOregon.pem ubuntu@52.26.93.76
 java paxos/ClientDrive 8001 paxos/Server.txt 0
 
 sudo -s

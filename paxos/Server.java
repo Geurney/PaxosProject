@@ -776,7 +776,7 @@ public class Server {
 						if (MaxACKNum[0] == -1) {
 							AcceptVal[0] = clientMsg[1];
 						} else {
-							AcceptVal[0] = MaxACKVal[1];
+							AcceptVal[0] = MaxACKVal[0];
 							String msg = "Retry Post. Competition Failed due to another ack.";
 							reply(clientMsg[0], msg);
 							clientMsg = new String[2];
