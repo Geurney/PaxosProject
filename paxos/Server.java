@@ -566,7 +566,6 @@ public class Server {
 					if (i != ID)
 						send(msg, i);
 				}
-
 				ACKCount = 1;
 				STATUS = STATUSTYPE.AFTER_PREPARE;
 				System.out.println("	Prepare <" + BallotNum[0] + ","
@@ -956,8 +955,8 @@ public class Server {
 								+ AcceptNum[0] + "," + AcceptNum[1] + ","
 								+ AcceptNum[2] + "> <" + AcceptVal[0] + " <"
 								+ AcceptVal[1] + ">>" + " to " + BallotNum[1]);
+						STATUS = STATUSTYPE.WAIT;
 						if (Debug) {
-							STATUS = STATUSTYPE.WAIT;
 							System.out.println("	STATE CHANGE TO " + STATUS);
 						}
 					} else {
