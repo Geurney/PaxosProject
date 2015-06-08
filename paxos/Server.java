@@ -139,7 +139,7 @@ public class Server {
 		// Client Msg
 		clientMsg = new String[2];
 		// MaxACKNum and MaxACKVal
-		MaxACKNum = new int[2];
+		MaxACKNum = new int[3];
 		MaxACKNum[0] = -1;
 		MaxACKNum[1] = -1;
 		MaxACKNum[2] = -1;
