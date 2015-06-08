@@ -292,6 +292,13 @@ public class Server {
 				}
 				synchronized (STATUS) {
 					System.out.println("INPUT: " + input);
+					System.out.println("CURRENT STATE: " + STATUS);
+					System.out.println("	BallotNum: " + BallotNum[0] + ","
+							+ BallotNum[1] + "," + BallotNum[2]);
+					System.out.println("	AcceptNum: " + AcceptNum[0] + ","
+							+ AcceptNum[1] + "," + AcceptNum[2]);
+					System.out.println("	AcceptVal: " + AcceptVal[0] + ","
+							+ AcceptVal[1]);
 					StartTime = System.currentTimeMillis();
 					if (Debug) {
 						System.out.println("CURRENT STATE: " + STATUS);
@@ -340,6 +347,12 @@ public class Server {
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
+				System.out.println("****BallotNum: " + BallotNum[0] + ","
+						+ BallotNum[1] + "," + BallotNum[2]);
+				System.out.println("****AcceptNum: " + AcceptNum[0] + ","
+						+ AcceptNum[1] + "," + AcceptNum[2]);
+				System.out.println("****AcceptVal: " + AcceptVal[0] + ","
+						+ AcceptVal[1]);
 				if (Debug) {
 					System.out.println("****BallotNum: " + BallotNum[0] + ","
 							+ BallotNum[1] + "," + BallotNum[2]);
@@ -459,6 +472,7 @@ public class Server {
 				msg = sb.toString();
 			}
 			reply(address, msg);
+			System.out.println("	Send log to client.");
 		}
 
 		/**
