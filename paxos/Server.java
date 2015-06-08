@@ -287,7 +287,7 @@ public class Server {
 					System.out.println("	AcceptNum: " + AcceptNum[0] + ","
 							+ AcceptNum[1]+ ","	+ AcceptNum[2]);
 					System.out.println("	AcceptVal: " + AcceptVal[0] + ","
-							+ AcceptVal[1];
+							+ AcceptVal[1]);
 					switch (STATUS) {
 					case FAIL: {
 						String cmd[] = input.split("\"");
