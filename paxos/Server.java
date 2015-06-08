@@ -594,9 +594,9 @@ public class Server {
 							String[] msg = cmd[2].split("\'");
 							AcceptVal[0] = msg[0];
 							AcceptVal[1] = msg[1];
-				//			BallotNum[0] = ballot[0];
-				//			BallotNum[1] = ballot[1];
-				//			BallotNum[2] = ballot[2];
+							BallotNum[0] = ballot[0];
+							BallotNum[1] = ballot[1];
+							BallotNum[2] = ballot[2];
 							for (int i = 0; i < 5; i++) {
 								if (i != ID)
 									send(input, i);
@@ -620,9 +620,9 @@ public class Server {
 							String[] msg = cmd[2].split("\'");
 							AcceptVal[0] = msg[0];
 							AcceptVal[1] = msg[1];
-				//			BallotNum[0] = ballot[0];
-				//			BallotNum[1] = ballot[1];
-				//			BallotNum[2] = ballot[2];
+							BallotNum[0] = ballot[0];
+							BallotNum[1] = ballot[1];
+							BallotNum[2] = ballot[2];
 							for (int i = 0; i < 5; i++) {
 								if (i != ID)
 									send(input, i);
@@ -725,9 +725,9 @@ public class Server {
 						String[] val = cmd[2].split("\'");
 						AcceptVal[0] = val[0];
 						AcceptVal[1] = val[1];
-					//	BallotNum[0] = AcceptNum[0];
-					//	BallotNum[1] = AcceptNum[1];
-					//	BallotNum[2] = AcceptNum[2];
+						BallotNum[0] = AcceptNum[0];
+						BallotNum[1] = AcceptNum[1];
+						BallotNum[2] = AcceptNum[2];
 						for (int i = 0; i < 5; i++) {
 							if (i != ID)
 								send(input, i);
@@ -757,9 +757,9 @@ public class Server {
 				int[] ballot = { Integer.parseInt(ballot_string[0]),
 						Integer.parseInt(ballot_string[1]),
 						Integer.parseInt(ballot_string[2]) };
-				int[] accept = { Integer.parseInt(accept_string[0]),
+				int[] accept = {Integer.parseInt(accept_string[0]),
 						Integer.parseInt(accept_string[1]),
-						Integer.parseInt(accept_string[2]) };
+						Integer.parseInt(accept_string[2])};
 				if (ballot[0]==BallotNum[0] && ballot[1]==BallotNum[1]) {
 					ACKCount++;
 					if (accept[2] != -1 && accept[2] >= BallotNum[2]) {
@@ -879,23 +879,22 @@ public class Server {
 						Integer.parseInt(ballot_string[1]),
 						Integer.parseInt(ballot_string[2])};
 				if (ballot[0] > BallotNum[0]
-							|| (ballot[0] == BallotNum[0] && ballot[1] >= BallotNum[1])) {
-						if (!(ballot[0] == AcceptNum[0] && ballot[1] == AcceptNum[1])) {
+							|| (ballot[0] == BallotNum[0] && ballot[1] > BallotNum[1])) {
 							AcceptNum[0] = ballot[0];
 							AcceptNum[1] = ballot[1];
 							AcceptNum[2] = ballot[2];
 							String[] msg = cmd[2].split("\'");
 							AcceptVal[0] = msg[0];
 							AcceptVal[1] = msg[1];
-				//			BallotNum[0] = ballot[0];
-				//			BallotNum[1] = ballot[1];
-				//			BallotNum[2] = ballot[2];
+							BallotNum[0] = ballot[0];
+							BallotNum[1] = ballot[1];
+							BallotNum[2] = ballot[2];
 							for (int i = 0; i < 5; i++) {
 								if (i != ID)
 									send(input, i);
 							}
 							ACPCount = 1;
-						} else {
+				} else if(ballot[0] == BallotNum[0] && ballot[1] == BallotNum[1]) {
 							ACPCount++;
 							if (ACPCount == MAJORITY) {
 								String l = AcceptVal[0] + "\'" + AcceptVal[1];
@@ -914,8 +913,8 @@ public class Server {
 								STATUS = STATUSTYPE.WAIT;
 								System.out.println("	STATUS Change to " + STATUS);
 							}
-						}
-				}
+					}
+				
 						
 			/*			
 				if (ballot[2] == BallotNum[2]) {
