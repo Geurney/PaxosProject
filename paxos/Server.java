@@ -51,9 +51,6 @@ public class Server {
 
 	private volatile MODETYPE MODE;
 
-	private volatile long StartTime;
-	private boolean TimerEnable = false;
-
 	/**
 	 * BallotNum, ID
 	 */
@@ -97,11 +94,6 @@ public class Server {
 	private COMMThread COMM;
 
 	/**
-	 * Timer for silence
-	 */
-	private TIMERThread TIMER;
-
-	/**
 	 * Log
 	 */
 	private ArrayList<String> log;
@@ -123,7 +115,7 @@ public class Server {
 
 	private ServerTimer serverTimer;
 
-	private static boolean Debug = false;
+	private static boolean Debug = true;
 
 	public Server(ArrayList<String[]> config) throws IOException {
 		serverAddress = config;
@@ -161,14 +153,12 @@ public class Server {
 		// Thread
 		COMM = new COMMThread();
 		CIL = new CLIThread();
-		TIMER = new TIMERThread();
 
 	}
 
 	public void start() {
 		CIL.start();
 		COMM.start();
-		TIMER.start();
 	}
 
 	/**
@@ -299,13 +289,7 @@ public class Server {
 				synchronized (STATUS) {
 					System.out.println("INPUT: " + input);
 					System.out.println("CURRENT STATE: " + STATUS);
-					System.out.println("	BallotNum: " + BallotNum[0] + ","
-							+ BallotNum[1] + "," + BallotNum[2]);
-					System.out.println("	AcceptNum: " + AcceptNum[0] + ","
-							+ AcceptNum[1] + "," + AcceptNum[2]);
-					System.out.println("	AcceptVal: " + AcceptVal[0] + ","
-							+ AcceptVal[1]);
-					StartTime = System.currentTimeMillis();
+
 					if (Debug) {
 						System.out.println("CURRENT STATE: " + STATUS);
 
@@ -799,6 +783,7 @@ public class Server {
 								+ AcceptVal[1] + ">>" + " to " + BallotNum[1]);
 						serverTimer.cancel();
 						STATUS = STATUSTYPE.WAIT;
+						serverTimer = new ServerTimer();
 						if (Debug) {
 							System.out.println("	STATE CHANGE TO " + STATUS);
 						}
@@ -816,6 +801,7 @@ public class Server {
 					sendHelp();
 					serverTimer.cancel();
 					STATUS = STATUSTYPE.WAIT;
+					serverTimer = new ServerTimer();
 					if (Debug) {
 						System.out.println("	STATE CHANGE TO " + STATUS);
 					}
@@ -872,6 +858,7 @@ public class Server {
 					sendHelp();
 					serverTimer.cancel();
 					STATUS = STATUSTYPE.WAIT;
+					serverTimer = new ServerTimer();
 					if (Debug) {
 						System.out.println("	STATE CHANGE TO " + STATUS);
 					}
@@ -927,8 +914,8 @@ public class Server {
 								+ "<" + AcceptVal[0] + "<" + AcceptVal[1]
 								+ ">>");
 						serverTimer.cancel();
-						serverTimer = new ServerTimer();
 						STATUS = STATUSTYPE.AFTER_SENDACCEPT;
+						serverTimer = new ServerTimer();
 						if (Debug) {
 							System.out.println("	STATE CHANGE TO " + STATUS);
 						}
@@ -999,6 +986,7 @@ public class Server {
 								+ AcceptVal[1] + ">>" + " to " + BallotNum[1]);
 						serverTimer.cancel();
 						STATUS = STATUSTYPE.WAIT;
+						serverTimer = new ServerTimer();
 						if (Debug) {
 							System.out.println("	STATE CHANGE TO " + STATUS);
 						}
@@ -1018,6 +1006,7 @@ public class Server {
 					sendHelp();
 					serverTimer.cancel();
 					STATUS = STATUSTYPE.WAIT;
+					serverTimer = new ServerTimer();
 					if (Debug) {
 						System.out.println("	STATE CHANGE TO " + STATUS);
 					}
@@ -1063,10 +1052,15 @@ public class Server {
 
 						System.out.println("	Decide: " + AcceptVal[0] + " ID: "
 								+ AcceptVal[1]);
-						if (clientMsg[0] != null) {
-							String msg = "Successfully insert to log "
-									+ BallotNum[2];
 
+						if (clientMsg[0] != null) {
+							String msg = null;
+							if (clientMsg[1].equals(AcceptVal[0])) {
+								msg = "Successfully insert to log "
+										+ BallotNum[2];
+							} else {
+								msg = "Retry Post. Competition failed due to another prepare.";
+							}
 							reply(clientMsg[0], msg);
 							clientMsg = new String[2];
 							System.out.println("	Server " + ID + " send " + msg
@@ -1074,40 +1068,12 @@ public class Server {
 						}
 						serverTimer.cancel();
 						STATUS = STATUSTYPE.WAIT;
-
+						serverTimer = new ServerTimer();
 						if (Debug) {
 							System.out.println("	STATUS Change to " + STATUS);
 						}
 					}
 				}
-
-				/*
-				 * if (ballot[2] == BallotNum[2]) { if (ballot[0] ==
-				 * BallotNum[0] && ballot[1] == BallotNum[1]) { ACPCount++; if
-				 * (ACPCount == MAJORITY) { String l = AcceptVal[0] + "\'" +
-				 * AcceptVal[1]; if (log.size() - 1 == BallotNum[2]) {
-				 * log.set(BallotNum[2], l); } else { log.add(l); } if
-				 * (clientMsg[0] != null) { String msg =
-				 * "Successfully insert to log " + AcceptVal[1];
-				 * reply(clientMsg[0], msg); clientMsg = new String[2]; } STATUS
-				 * = STATUSTYPE.WAIT; } } } else if (ballot[0] > BallotNum[0] ||
-				 * (ballot[0] == BallotNum[0] && ballot[1] > BallotNum[1])) { if
-				 * (clientMsg[0] != null) { String msg =
-				 * "Retry Post. Competiotion Failed due to another accept.";
-				 * reply(clientMsg[0], msg); clientMsg = new String[2]; }
-				 * AcceptNum[0] = ballot[0]; AcceptNum[1] = ballot[1];
-				 * AcceptNum[2] = ballot[2]; String[] val = cmd[2].split("\'");
-				 * AcceptVal[0] = val[0]; AcceptVal[1] = val[1]; BallotNum[0] =
-				 * AcceptNum[0]; BallotNum[1] = AcceptNum[1]; BallotNum[2] =
-				 * AcceptNum[2]; ACPCount = 1; for (int i = 0; i < 5; i++) { if
-				 * (i != ID) send(input, i); } System.out.println("	send " +
-				 * input + " to all"); } else if (ballot[2] < BallotNum[0]) {
-				 * System.out.println("	ignore small accept."); } else if
-				 * (ballot[2] > BallotNum[0]) { if (clientMsg[0] != null) {
-				 * String msg = "Retry Post. Missing Entry in Log.";
-				 * reply(clientMsg[0], msg); clientMsg = new String[2]; }
-				 * sendHelp(); STATUS = STATUSTYPE.WAIT; }
-				 */
 				break;
 			case "help":
 				process_help(Integer.parseInt(cmd[1]));
@@ -1122,38 +1088,12 @@ public class Server {
 		}
 	}
 
-	private class TIMERThread extends Thread {
-		@Override
-		public void run() {
-			long CurrentTime;
-			while (true) {
-				if (TimerEnable) {
-					try {
-						CurrentTime = System.currentTimeMillis();
-						if ((CurrentTime - StartTime) / 1000 > 15) {
-							synchronized (STATUS) {
-								if (STATUS != STATUSTYPE.WAIT
-										&& STATUS != STATUSTYPE.FAIL) {
-									STATUS = STATUSTYPE.WAIT;
-								}
-							}
-						}
-						Thread.sleep(1200);
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
-				}
-			}
-		}
-	}
-
 	private class ServerTimer extends Timer {
 		private ServerTimerTask serverTimerTask;
 
 		public ServerTimer() {
 			this.serverTimerTask = new ServerTimerTask();
-			this.schedule(this.serverTimerTask, 10000);
-			
+			this.schedule(this.serverTimerTask, 3000);
 		}
 
 		private class ServerTimerTask extends TimerTask {
@@ -1163,7 +1103,37 @@ public class Server {
 				synchronized (STATUS) {
 					System.out.println("TIME OUT!");
 					STATUS = STATUSTYPE.WAIT;
-                    this.cancel();
+					if (log.size() == 0) {
+						// BallotNum
+						BallotNum = new int[3];
+						BallotNum[0] = 0;
+						BallotNum[1] = 0;
+						BallotNum[2] = -1;
+						// Accept Num and Accept Val
+						AcceptNum = new int[3];
+						AcceptNum[0] = 0;
+						AcceptNum[1] = 0;
+						AcceptNum[2] = -1;
+						AcceptVal = new String[2];
+					} else {
+						String[] lastEntry = log.get(log.size() - 1)
+								.split("\'");
+						String[] lastEntry_num = lastEntry[1].split(",");
+						int[] lastNum = { Integer.parseInt(lastEntry_num[0]),
+								Integer.parseInt(lastEntry_num[1]),
+								Integer.parseInt(lastEntry_num[2]) };
+						AcceptNum[0] = lastNum[0];
+						AcceptNum[1] = lastNum[1];
+						AcceptNum[2] = lastNum[2];
+						AcceptVal[0] = lastEntry[0];
+						AcceptVal[1] = lastEntry[1];
+						BallotNum[0] = AcceptNum[0];
+						BallotNum[1] = AcceptNum[1];
+						BallotNum[2] = AcceptNum[2];
+
+					}
+					clientMsg = new String[2];
+					this.cancel();
 				}
 			}
 		}
