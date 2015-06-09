@@ -689,9 +689,9 @@ public class Server {
 					}
 				} else if (ballot[2] == log.size() - 1) {
 					if (ballot[0] > BallotNum[0]
-							|| (ballot[0] == BallotNum[0] && ballot[1] > BallotNum[1])) {
-						// if (!(ballot[0] == AcceptNum[0] && ballot[1] ==
-						// AcceptNum[1])) {
+							|| (ballot[0] == BallotNum[0] && ballot[1] >= BallotNum[1])) {
+                    if (!(ballot[0] == AcceptNum[0] && ballot[1] ==
+						 AcceptNum[1])) {
 						AcceptNum[0] = ballot[0];
 						AcceptNum[1] = ballot[1];
 						AcceptNum[2] = ballot[2];
@@ -717,6 +717,7 @@ public class Server {
 						if (Debug) {
 							System.out.println("	STATE CHANGE TO " + STATUS);
 						}
+                      }
 					}
 				} else if (ballot[2] < log.size() - 1) {
 					if (Debug) {
