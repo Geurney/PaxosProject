@@ -609,7 +609,7 @@ public class Server {
 								+ AcceptNum[2] + "\"" + AcceptVal[0] + "\'"
 								+ AcceptVal[1] + "\'";
 						send(msg, BallotNum[1]);
-						System.out.println("ACK <" + BallotNum[0] + ","
+						System.out.println("    ACK <" + BallotNum[0] + ","
 								+ BallotNum[1] + "," + BallotNum[2] + "> <"
 								+ AcceptNum[0] + "," + AcceptNum[1] + ","
 								+ AcceptNum[2] + "> <" + AcceptVal[0] + " <"
@@ -629,7 +629,7 @@ public class Server {
 								+ AcceptNum[2] + "\"" + AcceptVal[0] + "\'"
 								+ AcceptVal[1] + "\'";
 						send(msg, BallotNum[1]);
-						System.out.println("ACK <" + BallotNum[0] + ","
+						System.out.println("    ACK <" + BallotNum[0] + ","
 								+ BallotNum[1] + "," + BallotNum[2] + "> <"
 								+ AcceptNum[0] + "," + AcceptNum[1] + ","
 								+ AcceptNum[2] + "> <" + AcceptVal[0] + " <"
@@ -916,7 +916,7 @@ public class Server {
 							if (i != ID)
 								send(msg, i);
 						}
-						System.out.println("	ACCEPT <" + BallotNum[0] + ","
+						System.out.println("	Majority ack, send ACCEPT <" + BallotNum[0] + ","
 								+ BallotNum[1] + "," + BallotNum[2] + "> "
 								+ "<" + AcceptVal[0] + "<" + AcceptVal[1]
 								+ ">>");
@@ -1056,7 +1056,7 @@ public class Server {
 						String l = AcceptVal[0] + "\'" + AcceptVal[1];
 						if (log.size() - 1 == BallotNum[2]) {
 							log.set(BallotNum[2], l);
-							System.out.println("*****Change BallotNum in log");
+//							System.out.println("*****Change BallotNum in log");
 						} else {
 							log.add(l);
 						}
@@ -1069,10 +1069,10 @@ public class Server {
 							if (clientMsg[1].equals(AcceptVal[0])) {
 								msg = "Successfully insert to log "
 										+ BallotNum[2];
-								if(BallotNum[1]!=ID) System.out.println("*****Insert with BallotNum changed!");
+//								if(BallotNum[1]!=ID) System.out.println("*****Insert with BallotNum changed!");
 							} else {
 								msg = "Retry Post. Competition failed due to another prepare.";
-								System.out.println("*****Reject after receiving majority accept!");
+//								System.out.println("*****Reject after receiving majority accept!");
 							}
 							reply(clientMsg[0], msg);
 							clientMsg = new String[2];
@@ -1110,7 +1110,7 @@ public class Server {
 		}
 		
 		public void startTimer() {
-			this.schedule(this.serverTimerTask, 600000);
+			this.schedule(this.serverTimerTask, 300000);
 		}
 
 		private class ServerTimerTask extends TimerTask {
