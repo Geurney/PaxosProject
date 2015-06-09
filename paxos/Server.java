@@ -1152,7 +1152,7 @@ public class Server {
 
 		public ServerTimer() {
 			this.serverTimerTask = new ServerTimerTask();
-			this.schedule(this.serverTimerTask, 0, 10000);
+			this.schedule(this.serverTimerTask, 10000);
 			this.cancel();
 		}
 
