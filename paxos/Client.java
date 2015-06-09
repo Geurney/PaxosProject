@@ -94,8 +94,10 @@ public class Client extends Thread {
 					System.out.println(input);
 				} else {
 					String[] inStrings = input.split("\"");
-					for (String i : inStrings)
-						System.out.println(i);
+					System.out.println(inStrings[0]);
+					for (int i = 0; i < inStrings.length(); i++) {
+						System.out.println(i+"  " + inStrings[i+1]);
+					}
 				}
 				if (input.contains("Retry")) {
 					int temp = rand.nextInt(5);
