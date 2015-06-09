@@ -1153,7 +1153,7 @@ public class Server {
 		public ServerTimer() {
 			this.serverTimerTask = new ServerTimerTask();
 			this.schedule(this.serverTimerTask, 10000);
-			this.cancel();
+			
 		}
 
 		private class ServerTimerTask extends TimerTask {
@@ -1163,6 +1163,7 @@ public class Server {
 				synchronized (STATUS) {
 					System.out.println("TIME OUT!");
 					STATUS = STATUSTYPE.WAIT;
+                    this.cancel();
 				}
 			}
 		}
