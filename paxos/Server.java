@@ -9,6 +9,8 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Scanner;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class Server {
 	/**
@@ -118,6 +120,8 @@ public class Server {
 	 * Max ACK Value
 	 */
 	private String[] MaxACKVal;
+	
+	private ServerTimer serverTimer;
 
 	private static boolean Debug = false;
 
@@ -158,6 +162,7 @@ public class Server {
 		COMM = new COMMThread();
 		CIL = new CLIThread();
 		TIMER = new TIMERThread();
+
 	}
 
 	public void start() {
@@ -547,6 +552,7 @@ public class Server {
 			String operation = cmd[0];
 			switch (operation) {
 			case "post": {
+				serverTimer = new ServerTimer();
 				// post"192.168.21.11'8001"Hello how are you?
 				clientMsg[0] = cmd[1]; // 192.168.21.11'8001
 				clientMsg[1] = cmd[2]; // Hello how are you?
@@ -654,7 +660,7 @@ public class Server {
 									send(input, i);
 							}
 							ACPCount = 2;
-
+							serverTimer = new ServerTimer();
 							STATUS = STATUSTYPE.AFTER_SENDACCEPT;
 							System.out.println("	ACCEPT <" + ballot[0] + ","
 									+ ballot[1] + "," + ballot[2] + "> " + "<"
@@ -764,6 +770,7 @@ public class Server {
 								+ AcceptNum[0] + "," + AcceptNum[1] + ","
 								+ AcceptNum[2] + "> <" + AcceptVal[0] + " <"
 								+ AcceptVal[1] + ">>" + " to " + BallotNum[1]);
+						serverTimer.cancel();
 						STATUS = STATUSTYPE.WAIT;
 						if (Debug) {
 							System.out.println("	STATE CHANGE TO " + STATUS);
@@ -780,6 +787,7 @@ public class Server {
 					reply(clientMsg[0], msg);
 					clientMsg = new String[2];
 					sendHelp();
+					serverTimer.cancel();
 					STATUS = STATUSTYPE.WAIT;
 					if (Debug) {
 						System.out.println("	STATE CHANGE TO " + STATUS);
@@ -810,9 +818,10 @@ public class Server {
 						for (int i = 0; i < 5; i++) {
 							if (i != ID)
 								send(input, i);
-                        }
+						}
 						ACPCount = 2;
-
+						serverTimer.cancel();
+						serverTimer = new ServerTimer();
 						STATUS = STATUSTYPE.AFTER_SENDACCEPT;
 						System.out.println("	ACCEPT <" + ballot[0] + ","
 								+ ballot[1] + "," + ballot[2] + "> " + "<"
@@ -834,6 +843,7 @@ public class Server {
 					reply(clientMsg[0], msg);
 					clientMsg = new String[2];
 					sendHelp();
+					serverTimer.cancel();
 					STATUS = STATUSTYPE.WAIT;
 					if (Debug) {
 						System.out.println("	STATE CHANGE TO " + STATUS);
@@ -889,6 +899,8 @@ public class Server {
 								+ BallotNum[1] + "," + BallotNum[2] + "> "
 								+ "<" + AcceptVal[0] + "<" + AcceptVal[1]
 								+ ">>");
+						serverTimer.cancel();
+						serverTimer = new ServerTimer();
 						STATUS = STATUSTYPE.AFTER_SENDACCEPT;
 						if (Debug) {
 							System.out.println("	STATE CHANGE TO " + STATUS);
@@ -938,11 +950,12 @@ public class Server {
 				if (ballot[2] == log.size()) {
 					if (ballot[0] > BallotNum[0]
 							|| (ballot[0] == BallotNum[0] && ballot[1] > BallotNum[1])) {
-//						if (clientMsg[0] != null) {
-//							String msg = "Retry Post. Competition failed due to another prepare.";
-//							reply(clientMsg[0], msg);
-//							clientMsg = new String[2];
-//						}
+						// if (clientMsg[0] != null) {
+						// String msg =
+						// "Retry Post. Competition failed due to another prepare.";
+						// reply(clientMsg[0], msg);
+						// clientMsg = new String[2];
+						// }
 						BallotNum[0] = ballot[0];
 						BallotNum[1] = ballot[1];
 						BallotNum[2] = ballot[2];
@@ -957,6 +970,7 @@ public class Server {
 								+ AcceptNum[0] + "," + AcceptNum[1] + ","
 								+ AcceptNum[2] + "> <" + AcceptVal[0] + " <"
 								+ AcceptVal[1] + ">>" + " to " + BallotNum[1]);
+						serverTimer.cancel();
 						STATUS = STATUSTYPE.WAIT;
 						if (Debug) {
 							System.out.println("	STATE CHANGE TO " + STATUS);
@@ -975,6 +989,7 @@ public class Server {
 						clientMsg = new String[2];
 					}
 					sendHelp();
+					serverTimer.cancel();
 					STATUS = STATUSTYPE.WAIT;
 					if (Debug) {
 						System.out.println("	STATE CHANGE TO " + STATUS);
@@ -1030,6 +1045,7 @@ public class Server {
 							System.out.println("	Server " + ID + " send " + msg
 									+ " to client.");
 						}
+						serverTimer.cancel();
 						STATUS = STATUSTYPE.WAIT;
 
 						if (Debug) {
@@ -1087,7 +1103,7 @@ public class Server {
 				if (TimerEnable) {
 					try {
 						CurrentTime = System.currentTimeMillis();
-						if ((CurrentTime - StartTime) / 1000 > 13) {
+						if ((CurrentTime - StartTime) / 1000 > 15) {
 							synchronized (STATUS) {
 								if (STATUS != STATUSTYPE.WAIT
 										&& STATUS != STATUSTYPE.FAIL) {
@@ -1102,5 +1118,27 @@ public class Server {
 				}
 			}
 		}
+	}
+
+	private class ServerTimer extends Timer {
+		private ServerTimerTask serverTimerTask;
+
+		public ServerTimer() {
+			this.serverTimerTask = new ServerTimerTask();
+			this.schedule(this.serverTimerTask, 0, 10000);
+			this.cancel();
+		}
+
+		private class ServerTimerTask extends TimerTask {
+
+			@Override
+			public void run() {
+				synchronized (STATUS) {
+					System.out.println("TIME OUT!");
+					STATUS = STATUSTYPE.WAIT;
+				}
+			}
+		}
+
 	}
 }
