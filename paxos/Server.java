@@ -288,8 +288,9 @@ public class Server {
 					continue;
 				}
 				synchronized (STATUS) {
+                    System.out.println("INPUT: " + input);
 					if (Debug) {
-						System.out.println("INPUT: " + input);
+						
 						System.out.println("CURRENT STATE: " + STATUS);
 
 						System.out.println("	BallotNum: " + BallotNum[0] + ","
@@ -868,7 +869,7 @@ public class Server {
 			}
 				break;
 			case "ack":
-				System.out.println(input);
+//				System.out.println(input);
 				String[] ballot_string = cmd[1].split(",");
 				String[] accept_string = cmd[2].split(",");
 				String[] val = cmd[3].split("'");
