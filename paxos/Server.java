@@ -288,9 +288,9 @@ public class Server {
 					continue;
 				}
 				synchronized (STATUS) {
-                    System.out.println("INPUT: " + input);
+					System.out.println("INPUT: " + input);
 					if (Debug) {
-						
+
 						System.out.println("CURRENT STATE: " + STATUS);
 
 						System.out.println("	BallotNum: " + BallotNum[0] + ","
@@ -307,16 +307,14 @@ public class Server {
 						if (operation.equals("wake")) {
 							String msg = "help\"" + ID;
 							STATUS = STATUSTYPE.WAIT;
-                            serverTimer = new ServerTimer();
-                            serverTimer.startTimer();
+							serverTimer = new ServerTimer();
+							serverTimer.startTimer();
 							MODE = MODETYPE.RECOVERY;
 							for (int i = 0; i < 5; i++) {
 								if (i != ID)
 									send(msg, i);
 							}
-
 							System.out.println("	" + "Send out help to all...");
-
 						}
 					}
 						break;
@@ -483,19 +481,14 @@ public class Server {
 					int[] lastNum = { Integer.parseInt(lastEntry_num[0]),
 							Integer.parseInt(lastEntry_num[1]),
 							Integer.parseInt(lastEntry_num[2]) };
-					if (AcceptNum[2] < lastNum[2]) {
-						AcceptNum[0] = lastNum[0];
-						AcceptNum[1] = lastNum[1];
-						AcceptNum[2] = lastNum[2];
-						AcceptVal[0] = lastEntry[0];
-						AcceptVal[1] = lastEntry[1];
-						if (BallotNum[2] < AcceptNum[2]) {
-							BallotNum[0] = AcceptNum[0];
-							BallotNum[1] = AcceptNum[1];
-							BallotNum[2] = AcceptNum[2];
-						}
-					}
-
+					AcceptNum[0] = lastNum[0];
+					AcceptNum[1] = lastNum[1];
+					AcceptNum[2] = lastNum[2];
+					AcceptVal[0] = lastEntry[0];
+					AcceptVal[1] = lastEntry[1];
+					BallotNum[0] = AcceptNum[0];
+					BallotNum[1] = AcceptNum[1];
+					BallotNum[2] = AcceptNum[2];
 				}
 			} else {
 				if (cmd.length - 1 >= log.size()) {
@@ -521,13 +514,16 @@ public class Server {
 					int[] lastNum = { Integer.parseInt(lastEntry_num[0]),
 							Integer.parseInt(lastEntry_num[1]),
 							Integer.parseInt(lastEntry_num[2]) };
-					if (AcceptNum[2] < lastNum[2]) {
+					if (AcceptNum[2] < lastNum[2]
+							|| AcceptNum[0] < lastNum[0]
+							|| (AcceptNum[0] == lastNum[0] && AcceptNum[1] < lastNum[1])) {
 						AcceptNum[0] = lastNum[0];
 						AcceptNum[1] = lastNum[1];
 						AcceptNum[2] = lastNum[2];
 						AcceptVal[0] = lastEntry[0];
 						AcceptVal[1] = lastEntry[1];
-						if (BallotNum[2] < AcceptNum[2]) {
+						if (BallotNum[2] < AcceptNum[2] || BallotNum[0] < AcceptNum[0]
+								|| (BallotNum[0] == AcceptNum[0] && BallotNum[1] < AcceptNum[1])) {
 							BallotNum[0] = AcceptNum[0];
 							BallotNum[1] = AcceptNum[1];
 							BallotNum[2] = AcceptNum[2];
@@ -614,6 +610,9 @@ public class Server {
 								+ AcceptNum[0] + "," + AcceptNum[1] + ","
 								+ AcceptNum[2] + "> <" + AcceptVal[0] + " <"
 								+ AcceptVal[1] + ">>" + " to " + BallotNum[1]);
+						serverTimer.cancel();
+						serverTimer = new ServerTimer();
+						serverTimer.startTimer();
 					} else {
 						// do nothing
 					}
@@ -634,6 +633,9 @@ public class Server {
 								+ AcceptNum[0] + "," + AcceptNum[1] + ","
 								+ AcceptNum[2] + "> <" + AcceptVal[0] + " <"
 								+ AcceptVal[1] + ">>" + " to " + BallotNum[1]);
+						serverTimer.cancel();
+						serverTimer = new ServerTimer();
+						serverTimer.startTimer();
 					} else {
 						process_help(ballot[1]);
 					}
@@ -692,34 +694,33 @@ public class Server {
 				} else if (ballot[2] == log.size() - 1) {
 					if (ballot[0] > BallotNum[0]
 							|| (ballot[0] == BallotNum[0] && ballot[1] >= BallotNum[1])) {
-                    if (!(ballot[0] == AcceptNum[0] && ballot[1] ==
-						 AcceptNum[1])) {
-						AcceptNum[0] = ballot[0];
-						AcceptNum[1] = ballot[1];
-						AcceptNum[2] = ballot[2];
-						String[] msg = cmd[2].split("\'");
-						AcceptVal[0] = msg[0];
-						AcceptVal[1] = msg[1];
-						BallotNum[0] = ballot[0];
-						BallotNum[1] = ballot[1];
-						BallotNum[2] = ballot[2];
-						for (int i = 0; i < 5; i++) {
-							if (i != ID)
-								send(input, i);
+						if (!(ballot[0] == AcceptNum[0] && ballot[1] == AcceptNum[1])) {
+							AcceptNum[0] = ballot[0];
+							AcceptNum[1] = ballot[1];
+							AcceptNum[2] = ballot[2];
+							String[] msg = cmd[2].split("\'");
+							AcceptVal[0] = msg[0];
+							AcceptVal[1] = msg[1];
+							BallotNum[0] = ballot[0];
+							BallotNum[1] = ballot[1];
+							BallotNum[2] = ballot[2];
+							for (int i = 0; i < 5; i++) {
+								if (i != ID)
+									send(input, i);
+							}
+							ACPCount = 2;
+							serverTimer.cancel();
+							STATUS = STATUSTYPE.AFTER_SENDACCEPT;
+							serverTimer = new ServerTimer();
+							serverTimer.startTimer();
+							System.out.println("	ACCEPT <" + ballot[0] + ","
+									+ ballot[1] + "," + ballot[2] + "> " + "<"
+									+ msg[0] + "<" + msg[1] + ">>");
+							if (Debug) {
+								System.out
+										.println("	STATE CHANGE TO " + STATUS);
+							}
 						}
-
-						ACPCount = 2;
-						serverTimer.cancel();
-						STATUS = STATUSTYPE.AFTER_SENDACCEPT;
-						serverTimer = new ServerTimer();
-						serverTimer.startTimer();
-						System.out.println("	ACCEPT <" + ballot[0] + ","
-								+ ballot[1] + "," + ballot[2] + "> " + "<"
-								+ msg[0] + "<" + msg[1] + ">>");
-						if (Debug) {
-							System.out.println("	STATE CHANGE TO " + STATUS);
-						}
-                      }
 					}
 				} else if (ballot[2] < log.size() - 1) {
 					if (Debug) {
@@ -872,7 +873,7 @@ public class Server {
 			}
 				break;
 			case "ack":
-//				System.out.println(input);
+				// System.out.println(input);
 				String[] ballot_string = cmd[1].split(",");
 				String[] accept_string = cmd[2].split(",");
 				String[] val = cmd[3].split("'");
@@ -916,10 +917,10 @@ public class Server {
 							if (i != ID)
 								send(msg, i);
 						}
-						System.out.println("	Majority ack, send ACCEPT <" + BallotNum[0] + ","
-								+ BallotNum[1] + "," + BallotNum[2] + "> "
-								+ "<" + AcceptVal[0] + "<" + AcceptVal[1]
-								+ ">>");
+						System.out.println("	Majority ack, send ACCEPT <"
+								+ BallotNum[0] + "," + BallotNum[1] + ","
+								+ BallotNum[2] + "> " + "<" + AcceptVal[0]
+								+ "<" + AcceptVal[1] + ">>");
 						serverTimer.cancel();
 						STATUS = STATUSTYPE.AFTER_SENDACCEPT;
 						serverTimer = new ServerTimer();
@@ -972,12 +973,6 @@ public class Server {
 				if (ballot[2] == log.size()) {
 					if (ballot[0] > BallotNum[0]
 							|| (ballot[0] == BallotNum[0] && ballot[1] > BallotNum[1])) {
-						// if (clientMsg[0] != null) {
-						// String msg =
-						// "Retry Post. Competition failed due to another prepare.";
-						// reply(clientMsg[0], msg);
-						// clientMsg = new String[2];
-						// }
 						BallotNum[0] = ballot[0];
 						BallotNum[1] = ballot[1];
 						BallotNum[2] = ballot[2];
@@ -1043,12 +1038,10 @@ public class Server {
 						if (i != ID)
 							send(input, i);
 					}
-
 					ACPCount = 2;
 					System.out.println("	ACCEPT <" + BallotNum[0] + ","
 							+ BallotNum[1] + "," + BallotNum[2] + "> " + "<"
 							+ AcceptVal[0] + "<" + AcceptVal[1] + ">>");
-
 				} else if (ballot[0] == BallotNum[0]
 						&& ballot[1] == BallotNum[1]) {
 					ACPCount++;
@@ -1056,23 +1049,22 @@ public class Server {
 						String l = AcceptVal[0] + "\'" + AcceptVal[1];
 						if (log.size() - 1 == BallotNum[2]) {
 							log.set(BallotNum[2], l);
-//							System.out.println("*****Change BallotNum in log");
+							// System.out.println("*****Change BallotNum in log");
 						} else {
 							log.add(l);
 						}
-
 						System.out.println("	Decide: " + AcceptVal[0] + " ID: "
 								+ AcceptVal[1]);
-
 						if (clientMsg[0] != null) {
 							String msg = null;
 							if (clientMsg[1].equals(AcceptVal[0])) {
 								msg = "Successfully insert to log "
 										+ BallotNum[2];
-//								if(BallotNum[1]!=ID) System.out.println("*****Insert with BallotNum changed!");
+								// if(BallotNum[1]!=ID)
+								// System.out.println("*****Insert with BallotNum changed!");
 							} else {
 								msg = "Retry Post. Competition failed due to another prepare.";
-//								System.out.println("*****Reject after receiving majority accept!");
+								// System.out.println("*****Reject after receiving majority accept!");
 							}
 							reply(clientMsg[0], msg);
 							clientMsg = new String[2];
@@ -1108,7 +1100,7 @@ public class Server {
 		public ServerTimer() {
 			this.serverTimerTask = new ServerTimerTask();
 		}
-		
+
 		public void startTimer() {
 			this.schedule(this.serverTimerTask, 300000);
 		}
@@ -1118,42 +1110,42 @@ public class Server {
 			@Override
 			public void run() {
 				synchronized (STATUS) {
-                    if(STATUS != STATUSTYPE.FAIL){
-					System.out.println("TIME OUT!");
-					STATUS = STATUSTYPE.WAIT;
-					if (log.size() == 0) {
-						// BallotNum
-						BallotNum = new int[3];
-						BallotNum[0] = 0;
-						BallotNum[1] = 0;
-						BallotNum[2] = -1;
-						// Accept Num and Accept Val
-						AcceptNum = new int[3];
-						AcceptNum[0] = 0;
-						AcceptNum[1] = 0;
-						AcceptNum[2] = -1;
-						AcceptVal = new String[2];
-					} else {
-						String[] lastEntry = log.get(log.size() - 1)
-								.split("\'");
-						String[] lastEntry_num = lastEntry[1].split(",");
-						int[] lastNum = { Integer.parseInt(lastEntry_num[0]),
-								Integer.parseInt(lastEntry_num[1]),
-								Integer.parseInt(lastEntry_num[2]) };
-						AcceptNum[0] = lastNum[0];
-						AcceptNum[1] = lastNum[1];
-						AcceptNum[2] = lastNum[2];
-						AcceptVal[0] = lastEntry[0];
-						AcceptVal[1] = lastEntry[1];
-						BallotNum[0] = AcceptNum[0];
-						BallotNum[1] = AcceptNum[1];
-						BallotNum[2] = AcceptNum[2];
-
+					if (STATUS != STATUSTYPE.FAIL) {
+						System.out.println("TIME OUT!");
+						STATUS = STATUSTYPE.WAIT;
+						if (log.size() == 0) {
+							// BallotNum
+							BallotNum = new int[3];
+							BallotNum[0] = 0;
+							BallotNum[1] = 0;
+							BallotNum[2] = -1;
+							// Accept Num and Accept Val
+							AcceptNum = new int[3];
+							AcceptNum[0] = 0;
+							AcceptNum[1] = 0;
+							AcceptNum[2] = -1;
+							AcceptVal = new String[2];
+						} else {
+							String[] lastEntry = log.get(log.size() - 1).split(
+									"\'");
+							String[] lastEntry_num = lastEntry[1].split(",");
+							int[] lastNum = {
+									Integer.parseInt(lastEntry_num[0]),
+									Integer.parseInt(lastEntry_num[1]),
+									Integer.parseInt(lastEntry_num[2]) };
+							AcceptNum[0] = lastNum[0];
+							AcceptNum[1] = lastNum[1];
+							AcceptNum[2] = lastNum[2];
+							AcceptVal[0] = lastEntry[0];
+							AcceptVal[1] = lastEntry[1];
+							BallotNum[0] = AcceptNum[0];
+							BallotNum[1] = AcceptNum[1];
+							BallotNum[2] = AcceptNum[2];
+						}
+						clientMsg = new String[2];
+						this.cancel();
 					}
-					clientMsg = new String[2];
-					this.cancel();
 				}
-              }
 			}
 		}
 
