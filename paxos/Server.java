@@ -153,6 +153,7 @@ public class Server {
 		// Thread
 		COMM = new COMMThread();
 		CIL = new CLIThread();
+		serverTimer = new ServerTimer();
 
 	}
 
@@ -578,6 +579,7 @@ public class Server {
 				serverTimer.cancel();
 				STATUS = STATUSTYPE.AFTER_PREPARE;
 				serverTimer = new ServerTimer();
+				serverTimer.startTimer();
 				System.out.println("	Prepare <" + BallotNum[0] + ","
 						+ BallotNum[1] + "," + BallotNum[2] + ">");
 				if (Debug) {
@@ -666,6 +668,7 @@ public class Server {
 							serverTimer.cancel();
 							STATUS = STATUSTYPE.AFTER_SENDACCEPT;
 							serverTimer = new ServerTimer();
+							serverTimer.startTimer();
 							System.out.println("	ACCEPT <" + ballot[0] + ","
 									+ ballot[1] + "," + ballot[2] + "> " + "<"
 									+ msg[0] + "<" + msg[1] + ">>");
@@ -706,6 +709,7 @@ public class Server {
 						serverTimer.cancel();
 						STATUS = STATUSTYPE.AFTER_SENDACCEPT;
 						serverTimer = new ServerTimer();
+						serverTimer.startTimer();
 						System.out.println("	ACCEPT <" + ballot[0] + ","
 								+ ballot[1] + "," + ballot[2] + "> " + "<"
 								+ msg[0] + "<" + msg[1] + ">>");
@@ -778,6 +782,7 @@ public class Server {
 						serverTimer.cancel();
 						STATUS = STATUSTYPE.WAIT;
 						serverTimer = new ServerTimer();
+						serverTimer.startTimer();
 						if (Debug) {
 							System.out.println("	STATE CHANGE TO " + STATUS);
 						}
@@ -796,6 +801,7 @@ public class Server {
 					serverTimer.cancel();
 					STATUS = STATUSTYPE.WAIT;
 					serverTimer = new ServerTimer();
+					serverTimer.startTimer();
 					if (Debug) {
 						System.out.println("	STATE CHANGE TO " + STATUS);
 					}
@@ -829,6 +835,7 @@ public class Server {
 						ACPCount = 2;
 						serverTimer.cancel();
 						serverTimer = new ServerTimer();
+						serverTimer.startTimer();
 						STATUS = STATUSTYPE.AFTER_SENDACCEPT;
 						System.out.println("	ACCEPT <" + ballot[0] + ","
 								+ ballot[1] + "," + ballot[2] + "> " + "<"
@@ -853,6 +860,7 @@ public class Server {
 					serverTimer.cancel();
 					STATUS = STATUSTYPE.WAIT;
 					serverTimer = new ServerTimer();
+					serverTimer.startTimer();
 					if (Debug) {
 						System.out.println("	STATE CHANGE TO " + STATUS);
 					}
@@ -911,6 +919,7 @@ public class Server {
 						serverTimer.cancel();
 						STATUS = STATUSTYPE.AFTER_SENDACCEPT;
 						serverTimer = new ServerTimer();
+						serverTimer.startTimer();
 						if (Debug) {
 							System.out.println("	STATE CHANGE TO " + STATUS);
 						}
@@ -982,6 +991,7 @@ public class Server {
 						serverTimer.cancel();
 						STATUS = STATUSTYPE.WAIT;
 						serverTimer = new ServerTimer();
+						serverTimer.startTimer();
 						if (Debug) {
 							System.out.println("	STATE CHANGE TO " + STATUS);
 						}
@@ -1002,6 +1012,7 @@ public class Server {
 					serverTimer.cancel();
 					STATUS = STATUSTYPE.WAIT;
 					serverTimer = new ServerTimer();
+					serverTimer.startTimer();
 					if (Debug) {
 						System.out.println("	STATE CHANGE TO " + STATUS);
 					}
@@ -1067,6 +1078,7 @@ public class Server {
 						serverTimer.cancel();
 						STATUS = STATUSTYPE.WAIT;
 						serverTimer = new ServerTimer();
+						serverTimer.startTimer();
 						if (Debug) {
 							System.out.println("	STATUS Change to " + STATUS);
 						}
@@ -1091,7 +1103,10 @@ public class Server {
 
 		public ServerTimer() {
 			this.serverTimerTask = new ServerTimerTask();
-			this.schedule(this.serverTimerTask, 3000);
+		}
+		
+		public void startTimer() {
+			this.schedule(this.serverTimerTask, 10000);
 		}
 
 		private class ServerTimerTask extends TimerTask {
