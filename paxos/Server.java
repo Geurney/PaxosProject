@@ -307,6 +307,8 @@ public class Server {
 						if (operation.equals("wake")) {
 							String msg = "help\"" + ID;
 							STATUS = STATUSTYPE.WAIT;
+                            serverTimer = new ServerTimer();
+                            serverTimer.startTimer();
 							MODE = MODETYPE.RECOVERY;
 							for (int i = 0; i < 5; i++) {
 								if (i != ID)
@@ -1116,6 +1118,7 @@ public class Server {
 			@Override
 			public void run() {
 				synchronized (STATUS) {
+                    if(STATUS != STATUSTYPE.FAIL){
 					System.out.println("TIME OUT!");
 					STATUS = STATUSTYPE.WAIT;
 					if (log.size() == 0) {
@@ -1150,6 +1153,7 @@ public class Server {
 					clientMsg = new String[2];
 					this.cancel();
 				}
+              }
 			}
 		}
 
