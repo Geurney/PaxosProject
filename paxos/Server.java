@@ -115,7 +115,7 @@ public class Server {
 
 	private ServerTimer serverTimer;
 
-	private static boolean Debug = true;
+	private static boolean Debug = false;
 
 	public Server(ArrayList<String[]> config) throws IOException {
 		serverAddress = config;
@@ -287,10 +287,8 @@ public class Server {
 					continue;
 				}
 				synchronized (STATUS) {
-					System.out.println("INPUT: " + input);
-					System.out.println("CURRENT STATE: " + STATUS);
-
 					if (Debug) {
+						System.out.println("INPUT: " + input);
 						System.out.println("CURRENT STATE: " + STATUS);
 
 						System.out.println("	BallotNum: " + BallotNum[0] + ","
@@ -312,10 +310,9 @@ public class Server {
 								if (i != ID)
 									send(msg, i);
 							}
-							if (Debug) {
-								System.out.println("	"
-										+ "Send out help to all...");
-							}
+
+							System.out.println("	" + "Send out help to all...");
+
 						}
 					}
 						break;
@@ -337,12 +334,6 @@ public class Server {
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
-				System.out.println("****BallotNum: " + BallotNum[0] + ","
-						+ BallotNum[1] + "," + BallotNum[2]);
-				System.out.println("****AcceptNum: " + AcceptNum[0] + ","
-						+ AcceptNum[1] + "," + AcceptNum[2]);
-				System.out.println("****AcceptVal: " + AcceptVal[0] + ","
-						+ AcceptVal[1]);
 				if (Debug) {
 					System.out.println("****BallotNum: " + BallotNum[0] + ","
 							+ BallotNum[1] + "," + BallotNum[2]);
@@ -563,7 +554,6 @@ public class Server {
 			String operation = cmd[0];
 			switch (operation) {
 			case "post": {
-				serverTimer = new ServerTimer();
 				// post"192.168.21.11'8001"Hello how are you?
 				clientMsg[0] = cmd[1]; // 192.168.21.11'8001
 				clientMsg[1] = cmd[2]; // Hello how are you?
@@ -585,7 +575,9 @@ public class Server {
 						send(msg, i);
 				}
 				ACKCount = 1;
+				serverTimer.cancel();
 				STATUS = STATUSTYPE.AFTER_PREPARE;
+				serverTimer = new ServerTimer();
 				System.out.println("	Prepare <" + BallotNum[0] + ","
 						+ BallotNum[1] + "," + BallotNum[2] + ">");
 				if (Debug) {
@@ -671,8 +663,9 @@ public class Server {
 									send(input, i);
 							}
 							ACPCount = 2;
-							serverTimer = new ServerTimer();
+							serverTimer.cancel();
 							STATUS = STATUSTYPE.AFTER_SENDACCEPT;
+							serverTimer = new ServerTimer();
 							System.out.println("	ACCEPT <" + ballot[0] + ","
 									+ ballot[1] + "," + ballot[2] + "> " + "<"
 									+ msg[0] + "<" + msg[1] + ">>");
@@ -710,8 +703,9 @@ public class Server {
 						}
 
 						ACPCount = 2;
-
+						serverTimer.cancel();
 						STATUS = STATUSTYPE.AFTER_SENDACCEPT;
+						serverTimer = new ServerTimer();
 						System.out.println("	ACCEPT <" + ballot[0] + ","
 								+ ballot[1] + "," + ballot[2] + "> " + "<"
 								+ msg[0] + "<" + msg[1] + ">>");
@@ -727,7 +721,7 @@ public class Server {
 					sendHelp();
 				}
 				break;
-			case "ack": // dong nothing
+			case "ack": // do nothing
 				break;
 			case "help":
 				// help"ID
@@ -866,6 +860,7 @@ public class Server {
 			}
 				break;
 			case "ack":
+				System.out.println(input);
 				String[] ballot_string = cmd[1].split(",");
 				String[] accept_string = cmd[2].split(",");
 				String[] val = cmd[3].split("'");
@@ -892,7 +887,7 @@ public class Server {
 							AcceptVal[0] = clientMsg[1];
 						} else {
 							AcceptVal[0] = MaxACKVal[0];
-							String msg = "Retry Post. Competition Failed due to another ack.";
+							String msg = "Retry Post. Competition Failed due to not bottom.";
 							reply(clientMsg[0], msg);
 							clientMsg = new String[2];
 						}
@@ -1046,6 +1041,7 @@ public class Server {
 						String l = AcceptVal[0] + "\'" + AcceptVal[1];
 						if (log.size() - 1 == BallotNum[2]) {
 							log.set(BallotNum[2], l);
+							System.out.println("*****Change BallotNum in log");
 						} else {
 							log.add(l);
 						}
@@ -1058,8 +1054,10 @@ public class Server {
 							if (clientMsg[1].equals(AcceptVal[0])) {
 								msg = "Successfully insert to log "
 										+ BallotNum[2];
+								if(BallotNum[1]!=ID) System.out.println("*****Insert with BallotNum changed!");
 							} else {
 								msg = "Retry Post. Competition failed due to another prepare.";
+								System.out.println("*****Reject after receiving majority accept!");
 							}
 							reply(clientMsg[0], msg);
 							clientMsg = new String[2];
