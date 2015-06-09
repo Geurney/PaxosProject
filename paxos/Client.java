@@ -95,7 +95,7 @@ public class Client extends Thread {
 				} else {
 					String[] inStrings = input.split("\"");
 					System.out.println(inStrings[0]);
-					for (int i = 0; i < inStrings.length; i++) {
+					for (int i = 0; i < inStrings.length-1; i++) {
 						System.out.println(i+"  " + inStrings[i+1]);
 					}
 				}
