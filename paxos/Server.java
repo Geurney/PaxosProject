@@ -120,7 +120,7 @@ public class Server {
 	 * Max ACK Value
 	 */
 	private String[] MaxACKVal;
-	
+
 	private ServerTimer serverTimer;
 
 	private static boolean Debug = false;
@@ -494,38 +494,65 @@ public class Server {
 			if (MODE == MODETYPE.RECOVERY) {
 				MODE = MODETYPE.NORMAL;
 			}
-			if (cmd.length - 1 >= log.size()) {
-				String[] myAccept_string = log.get(log.size() - 1).split("\'")[1]
-						.split(",");
-				String[] yourAccept_string = cmd[log.size()].split("\'")[1]
-						.split(",");
-				int[] myAccept = { Integer.parseInt(myAccept_string[0]),
-						Integer.parseInt(myAccept_string[1]) };
-				int[] yourAccept = { Integer.parseInt(yourAccept_string[0]),
-						Integer.parseInt(yourAccept_string[1]) };
-				if (yourAccept[0] > myAccept[0]
-						|| (yourAccept[0] == myAccept[0] && yourAccept[1] > myAccept[1])) {
-					log.set(log.size() - 1, cmd[log.size()]);
+			if (log.size() == 0) {
+				if (cmd.length - 1 > 0) {
+					for (int i = 1; i < cmd.length; i++) {
+						log.add(cmd[i]);
+					}
+					String[] lastEntry = log.get(log.size() - 1).split("\'");
+					String[] lastEntry_num = lastEntry[1].split(",");
+					int[] lastNum = { Integer.parseInt(lastEntry_num[0]),
+							Integer.parseInt(lastEntry_num[1]),
+							Integer.parseInt(lastEntry_num[2]) };
+					if (AcceptNum[2] < lastNum[2]) {
+						AcceptNum[0] = lastNum[0];
+						AcceptNum[1] = lastNum[1];
+						AcceptNum[2] = lastNum[2];
+						AcceptVal[0] = lastEntry[0];
+						AcceptVal[1] = lastEntry[1];
+						if (BallotNum[2] < AcceptNum[2]) {
+							BallotNum[0] = AcceptNum[0];
+							BallotNum[1] = AcceptNum[1];
+							BallotNum[2] = AcceptNum[2];
+						}
+					}
+
 				}
-				int index = log.size() + 1;
-				for (int i = index; i < cmd.length; i++) {
-					log.add(cmd[i]);
-				}
-				String[] lastEntry = log.get(log.size() - 1).split("\'");
-				String[] lastEntry_num = lastEntry[1].split(",");
-				int[] lastNum = { Integer.parseInt(lastEntry_num[0]),
-						Integer.parseInt(lastEntry_num[1]),
-						Integer.parseInt(lastEntry_num[2]) };
-				if (AcceptNum[2] < lastNum[2]) {
-					AcceptNum[0] = lastNum[0];
-					AcceptNum[1] = lastNum[1];
-					AcceptNum[2] = lastNum[2];
-					AcceptVal[0] = lastEntry[0];
-					AcceptVal[1] = lastEntry[1];
-					if (BallotNum[2] < AcceptNum[2]) {
-						BallotNum[0] = AcceptNum[0];
-						BallotNum[1] = AcceptNum[1];
-						BallotNum[2] = AcceptNum[2];
+			} else {
+				if (cmd.length - 1 >= log.size()) {
+					String[] myAccept_string = log.get(log.size() - 1).split(
+							"\'")[1].split(",");
+					String[] yourAccept_string = cmd[log.size()].split("\'")[1]
+							.split(",");
+					int[] myAccept = { Integer.parseInt(myAccept_string[0]),
+							Integer.parseInt(myAccept_string[1]) };
+					int[] yourAccept = {
+							Integer.parseInt(yourAccept_string[0]),
+							Integer.parseInt(yourAccept_string[1]) };
+					if (yourAccept[0] > myAccept[0]
+							|| (yourAccept[0] == myAccept[0] && yourAccept[1] > myAccept[1])) {
+						log.set(log.size() - 1, cmd[log.size()]);
+					}
+					int index = log.size() + 1;
+					for (int i = index; i < cmd.length; i++) {
+						log.add(cmd[i]);
+					}
+					String[] lastEntry = log.get(log.size() - 1).split("\'");
+					String[] lastEntry_num = lastEntry[1].split(",");
+					int[] lastNum = { Integer.parseInt(lastEntry_num[0]),
+							Integer.parseInt(lastEntry_num[1]),
+							Integer.parseInt(lastEntry_num[2]) };
+					if (AcceptNum[2] < lastNum[2]) {
+						AcceptNum[0] = lastNum[0];
+						AcceptNum[1] = lastNum[1];
+						AcceptNum[2] = lastNum[2];
+						AcceptVal[0] = lastEntry[0];
+						AcceptVal[1] = lastEntry[1];
+						if (BallotNum[2] < AcceptNum[2]) {
+							BallotNum[0] = AcceptNum[0];
+							BallotNum[1] = AcceptNum[1];
+							BallotNum[2] = AcceptNum[2];
+						}
 					}
 				}
 			}
