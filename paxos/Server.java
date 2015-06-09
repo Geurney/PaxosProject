@@ -1107,7 +1107,7 @@ public class Server {
 		}
 		
 		public void startTimer() {
-			this.schedule(this.serverTimerTask, 60000);
+			this.schedule(this.serverTimerTask, 600000);
 		}
 
 		private class ServerTimerTask extends TimerTask {
