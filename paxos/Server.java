@@ -50,7 +50,7 @@ public class Server {
 	private volatile MODETYPE MODE;
 
 	private volatile long StartTime;
-	private boolean TimerEnable = true;
+	private boolean TimerEnable = false;
 
 	/**
 	 * BallotNum, ID
@@ -1087,7 +1087,7 @@ public class Server {
 				if (TimerEnable) {
 					try {
 						CurrentTime = System.currentTimeMillis();
-						if ((CurrentTime - StartTime) / 1000 > 15) {
+						if ((CurrentTime - StartTime) / 1000 > 13) {
 							synchronized (STATUS) {
 								if (STATUS != STATUSTYPE.WAIT
 										&& STATUS != STATUSTYPE.FAIL) {
